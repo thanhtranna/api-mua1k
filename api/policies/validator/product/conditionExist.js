@@ -1,15 +1,17 @@
-'use strict';
+"use strict";
 
 module.exports = asyncWrap(async (req, res, next) => {
-  const conditionId = req.body.condition;
 
-  if (!conditionId) return next();
+    let conditionId = req.body.condition;
 
-  if (!sails.helpers.isMongoId(conditionId))
-    return res.badRequest(sails.errors.idMalformed);
+    if (!conditionId) return next();
 
-  const isConditionExist = await Condition.count({ _id: conditionId });
-  if (!isConditionExist) return res.notFound(sails.errors.conditionNotFound);
+    if (! sails.helpers.isMongoId(conditionId))
+        return res.badRequest(sails.errors.idMalformed);
 
-  next();
+    let isConditionExist = await Condition.count({_id: conditionId});
+    if (!isConditionExist)
+        return res.notFound(sails.errors.conditionNotFound);
+
+    next();
 });

@@ -51,19 +51,26 @@ const generateRoutes = function(routes) {
 };
 
 let routes = {
+  /**
+   * ============================================================================================
+   *  APP API
+   * ============================================================================================
+   */
+
   // ======= Auth Routes ======= /
-  'post /register/email': 'AccountController.postRegisterEmail',
-  'post /login/facebook': 'AccountController.postLoginFacebook',
-  'post /login/twitter': 'AccountController.postLoginTwitter',
-  'post /login/line': 'AccountController.postLoginLine',
-  'post /register/verify': 'AccountController.postVerifyRegister',
-  'post /register/resend-verify-code':
-    'AccountController.postResendRegisterVerifyCode',
+  // 'post /register/email': 'AccountController.postRegisterEmail',
+  // 'post /login/facebook': 'AccountController.postLoginFacebook',
+  // 'post /login/twitter': 'AccountController.postLoginTwitter',
+  // 'post /login/line': 'AccountController.postLoginLine',
+  'post /register': 'AccountController.postRegister',
+  // 'post /register/verify': 'AccountController.postVerifyRegister',
+  // 'post /register/resend-verify-code': 'AccountController.postResendRegisterVerifyCode',
   'post /login': 'AccountController.postLogin',
-  'post /reset-password/email': 'AccountController.postSendResetPasswordCode',
-  'post /reset-password/verify': 'AccountController.postVerifyResetPassword',
-  'post /reset-password': 'AccountController.postResetPassword',
+  // 'post /reset-password/email': 'AccountController.postSendResetPasswordCode',
+  // 'post /reset-password/verify': 'AccountController.postVerifyResetPassword',
+  // 'post /reset-password': 'AccountController.postResetPassword',
   'post /user/invitation': 'AccountController.updateInvitationUser',
+  'get /logout': 'AccountController.getLogout',
 
   // ======= Category Routes ======= /
   'get /categories': 'CategoryController.getCategories',
@@ -83,6 +90,7 @@ let routes = {
   'get /auction/:auctionid/reviews': 'ReviewController.getReviewsOfAuction',
   'get /auction/:auctionid/lucky-number-info':
     'AuctionController.luckyNumberInfo',
+  'get /auction/categories/all': 'AuctionController.getAuctionByCategories',
 
   // Review & Comment review & Like review /
   'get /reviews': 'ReviewController.getAllReviews',
@@ -106,17 +114,20 @@ let routes = {
   'get /user/:id/review': 'UserController.reviewList',
   'post /user/me/change-avatar': 'UserController.changeAvatar',
   'put /user/me/edit-nickname': 'UserController.changeNickname',
-  'get /image/*': 'UserController.image',
+  // 'get /image/*': 'UserController.image',
+
   // ======= User Address routes ======= /
   'get /user/me/address': 'UserController.addressList',
   'get /user/me/search-by-postcode': 'UserController.searchAddressByPostCode',
   'post /user/me/address/create': 'UserController.createAddress',
   'put /user/me/address/:id/edit': 'UserController.editAddress',
   'delete /user/me/address/:id/delete': 'UserController.deleteAddress',
+
   // ======= User Point & Coin Routes ======== /
   'get /user/me/point-coin': 'UserController.getPointAndCoin',
   'post /user/me/coin-exchange': 'UserController.coinExchange',
   'get /user/me/coin-exchange-history': 'UserController.coinExchangeHistory',
+
   // ======== Friend Route ========== /
   'get /user/me/friend': 'UserController.friendList',
   'get /top-invite': 'FriendController.topInviteList',
@@ -138,11 +149,14 @@ let routes = {
 
   // ====== Index Route ======= /
   'get /contact/category': 'IndexController.contactCategoryList',
-  'post /contact': 'IndexController.createContact',
 
+  'post /contact': 'IndexController.createContact',
   // ======== Message Routes ======== /
   'post /send-message': 'MessageController.sendMessage',
   'get /messages': 'MessageController.getMessages',
+
+  // ======== Report Routes ======== /
+  'post /report': 'ReportController.postReport',
 
   /**
    * ============================================================================================
@@ -153,6 +167,9 @@ let routes = {
   /** ======= Auth Routes ======= */
   'post /admin/login': 'Admin/AuthController.postLogin',
   'get /admin/me': 'Admin/AuthController.getMyProfile',
+  'get /admin/user-admins': 'Admin/AuthController.getUserAdmins',
+  'post /admin/user-admin': 'Admin/AuthController.postUserAdmin',
+  'put /admin/user-admin/:id': 'Admin/AuthController.putUserAdmin',
 
   /** ======= User Routes ======= */
   'get /admin/users': 'Admin/UserController.getUsers',
@@ -165,6 +182,13 @@ let routes = {
   'delete /admin/user/:id': 'Admin/UserController.deleteUser',
   'post /admin/user/trans/coin': 'Admin/UserController.postTransferCoinUser',
   'post /admin/user/trans/point': 'Admin/UserController.postTransferPointUser',
+  'get /admin/user-comment': 'Admin/UserController.getUserComments',
+  'put /admin/user-comment/block/:id':
+    'Admin/UserController.putUserCommentBlock',
+  'put /admin/user-comment/approved/:id':
+    'Admin/UserController.putUserCommentApproved',
+  'get /admin/product-favorite/:userid':
+    'Admin/UserController.getProductFavoriteByUser',
 
   /** ======= Product Routes ======= */
   'get /admin/product/:id': 'Admin/ProductController.detailProduct',
@@ -193,7 +217,7 @@ let routes = {
   'get /admin/auctions/filter': 'Admin/AuctionController.filterAuctions',
   'post /admin/auction': 'Admin/AuctionController.postAuction',
   'get /admin/auction/:auctionid': 'Admin/AuctionController.getAuction',
-  'put /admin/auc/:auctionid': 'Admin/AuctionController.putAuction',
+  'put /admin/auction/:auctionid': 'Admin/AuctionController.putAuction',
   'delete /admin/auction/:auctionid': 'Admin/AuctionController.deleteAuction',
   'put /admin/auction/block/:auctionid':
     'Admin/AuctionController.putAuctionBlock',
@@ -211,6 +235,7 @@ let routes = {
   'get /admin/log-user-chance-buys':
     'Admin/AuctionController.getLogUserChanceBuys',
   'get /admin/log-auction/:productid': 'Admin/AuctionController.getLogAuctions',
+  'get /admin/category-message': 'Admin/MessageController.getCategoryMessage',
 
   /** ======= Campaign Routes ======= */
   'get /admin/campaigns': 'Admin/CampaignController.getCampaigns',
@@ -220,16 +245,75 @@ let routes = {
   'put /admin/campaign/:id': 'Admin/CampaignController.putUpdate',
   'delete /admin/campaign/:id': 'Admin/CampaignController.deleteCampaign',
 
+  /** ======= Contact Routes ======= */
+  'get /admin/contacts': 'Admin/ContactController.getContacts',
+  'get /admin/contact/:id': 'Admin/ContactController.getContact',
+  'post /admin/contact/reply/:id': 'Admin/ContactController.postReplyContact',
+  'delete /admin/contact/:id': 'Admin/ContactController.deleteContact',
+
   /** ======= Category Routes ======= */
   'get /admin/categories': 'Admin/CategoryController.getCategories',
+  'post /admin/product/category': 'Admin/CategoryController.postCategory',
+  'get /admin/products/categories':
+    'Admin/CategoryController.getProductCategories',
+  'put /admin/product/category/:id':
+    'Admin/CategoryController.putProductCategory',
 
   /** ======= Condition Routes ======= */
   'get /admin/conditions': 'Admin/ConditionController.getConditions',
+  'get /admin/conditions/:id': 'Admin/ConditionController.getCondition',
+  'post /admin/conditions': 'Admin/ConditionController.postCreate',
+  'delete /admin/conditions/:id': 'Admin/ConditionController.deleteCondition',
+  'put /admin/conditions/:id': 'Admin/ConditionController.putUpdate',
+  'get /admin/condition-array': 'Admin/ConditionController.getConditionArray',
 
   /** ======= Review Routes ======= */
   'get /admin/reviews': 'Admin/ReviewController.getAllReviews',
   'put /admin/review/block/:id': 'Admin/ReviewController.blockReview',
-  'put /admin/review/approve/:id': 'Admin/ReviewController.approveReview'
+  'put /admin/review/approve/:id': 'Admin/ReviewController.approveReview',
+  'delete /admin/review/:id': 'Admin/ReviewController.deleteReview',
+
+  /** View routes */
+  'get /view/login': 'AccountController.getLogin',
+
+  /** ======= Contact Category ======= */
+  'post /admin/contact-category':
+    'Admin/ContactCategoryController.postContactCategory',
+  'get /admin/contact-categories':
+    'Admin/ContactCategoryController.getContactCategories',
+  'put /admin/contact-category/:id':
+    'Admin/ContactCategoryController.putContactCategory',
+  'delete /admin/contact-category/:id':
+    'Admin/ContactCategoryController.deleteContactCategory',
+  'get /admin/contact-category/:id':
+    'Admin/ContactCategoryController.getContactCategory',
+
+  /** ======= User Report ======= */
+  'get /admin/user-reports': 'Admin/UserController.getUserReports',
+
+  /** ======= Log User Chance Buy Routes ======= */
+  'get /admin/user-chance-buys':
+    'Admin/UserChanceBuyController.getUserChanceBuys',
+  'get /admin/log-user-chance-buy/:id':
+    'Admin/UserChanceBuyController.getLogUserChanceBuys',
+
+  /** ======= Log User Coin Charge  ======= */
+  'get /admin/log-user-coin-charge/:id':
+    'Admin/LogUserController.getLogUserCoinChargeDetail',
+
+  /** ======= Discount Ticket Routers ======= */
+  'get /admin/discount-ticket/:userid':
+    'Admin/DiscountTicketController.discountTicketByUser',
+
+  /** ======= Discount Ticket Routers ======= */
+  'get /admin/log-friend/:userid': 'Admin/FriendController.getFriendByUser',
+
+  'get /admin/confirm-auction-winner/:id':
+    'Admin/LogUserController.confirmAuctionWinner',
+  'get /admin/confirm-auction-winner-success/:id':
+    'Admin/LogUserController.confirmAuctionWinnerSuccessful',
+  'get /admin/confirm-auction-winner-fails/:id':
+    'Admin/LogUserController.confirmAuctionWinnerFails'
 };
 
 /**
@@ -239,7 +323,15 @@ if (process.env.NODE_ENV !== 'production') {
   let routeOnlyUsedInDevelopment = {
     'get /faker/clean-db': 'FakerController.cleanDb',
     'get /faker/clean-all-db': 'FakerController.cleanAllDb',
+    'get /faker/clean-db-staging': 'FakerController.cleanDBForStaging',
+    'get /faker/clean-db-admin': 'FakerController.cleanDBAdmin',
     'get /faker/test': 'FakerController.test',
+
+    /** Get Debug Todo: remove **/
+    'get /debugs': 'FakerController.getDebug',
+
+    // Coin
+    'post /user/me/get-coin': 'UserController.getCoin',
 
     // Category
     'get /faker/category/:quantity': 'FakerController.fakeCategory',
@@ -258,7 +350,7 @@ if (process.env.NODE_ENV !== 'production') {
     'get /faker/chance-buy': 'FakerController.fakeUserChanceBuy',
     'get /faker/review': 'FakerController.fakeReview',
 
-    //thienlv
+    // Chance Buy
     'get /faker/chance-buy-2/:quantity': 'FakerController.fakeUserChanceBuy2',
     'get /faker/winners/:quantity': 'FakerController.fakeWinner',
 
@@ -301,7 +393,10 @@ if (process.env.NODE_ENV !== 'production') {
 
     // faker message
     'get /faker/message-cate/:quantity': 'FakerController.fakeMessageCategory',
+
+    // faker contact
     'get /faker/contact-category': 'FakerController.fakeContactCategory',
+    'get /faker/contacts/:quantity': 'FakerController.fakeContacts',
 
     // campaign
     'get /faker/campaigns/:quantity': 'FakerController.fakeCampaigns',
@@ -315,9 +410,21 @@ if (process.env.NODE_ENV !== 'production') {
     // create real category
     'get /faker/real-category': 'FakerController.createRealCategory',
 
+    // calculate number b
+    'get /faker/number-b': 'FakerController.calculateNumberB',
+
     // log auction winner
     'get /faker/log-auction-winner/:quantity':
-      'FakerController.fakeLogAuctionWinner'
+      'FakerController.fakeLogAuctionWinner',
+
+    // faker friend of user
+    'get /faker/user/me/friend/:quantity': 'FakerController.fakeUserFriend',
+
+    // faker user discount ticket
+    'get /faker/user/discount/ticket': 'FakerController.fakeUserDiscountTicket',
+
+    // faker report
+    'get /faker/report/:quantity': 'FakerController.fakeReportUser'
   };
   routes = Object.assign({}, routes, routeOnlyUsedInDevelopment);
 }

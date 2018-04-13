@@ -45,9 +45,9 @@ const ReviewRepository = {
      * @param {Number} page page of pagination
      * @returns {Promise.<*|Promise>}
      */
-    reviewByUser: async (id, page) => {
+    reviewByUser: async (id,me, page) => {
         try {
-            let logAuctionWinner = await LogAuctionWinner.find({user:id}).lean(true);
+            const logAuctionWinner = await LogAuctionWinner.find({user:id}).lean(true);
             let auctionId = [];
             for(let i in logAuctionWinner) {
                 auctionId.push(logAuctionWinner[i].auction);
@@ -55,12 +55,20 @@ const ReviewRepository = {
             let options = {
                 select: [
                     "-updatedAt",
-                    "-createdAt",
                     "-__v"
                 ],
                 limit: sails.config.paginateLimit,
+                populate: [
+                    {
+                        path: "user",
+                        select: "_id nickname email avatar"
+                    }
+                ],
                 page: page,
-                lean: true
+                lean: true,
+                sort: {
+                    createdAt: -1
+                }
             }
             let query = {
                 user:id,
@@ -73,7 +81,13 @@ const ReviewRepository = {
             reviews = reviews.docs;
             for(let i in reviews) {
                 reviews[i].totalLikes = await UserLike.count({review:reviews[i].id});
-                reviews[i].toalComments = await UserComment.count({review:reviews[i].id});
+                let userLike = await UserLike.findOne({review:reviews[i].id, user:me});
+                if (userLike) {
+                    reviews[i].isLiked = true;
+                } else {
+                    reviews[i].isLike = false;
+                }
+                reviews[i].totalComments = await UserComment.count({review:reviews[i].id, status: 1});
             }
             return reviews;
         } catch (err) {
@@ -116,7 +130,8 @@ const ReviewRepository = {
             };
 
             if (req._fileparser.upstreams.length) {
-                dataCreate.image = await UploadService.upload(options);
+                let image = await UploadService.upload(options);
+                dataCreate.image = image[0];
             }
 
             let review = await Review.create(dataCreate);

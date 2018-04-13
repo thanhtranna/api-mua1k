@@ -31,12 +31,13 @@ module.exports = {
      */
 
     coinExchange: async (user, point) => {
-        if(point % sails.config.coinExchangeRatio === 0) {
-            let userPoint = await UserPoint.findOne({user});
+        if(point / sails.config.coinExchangeRatio >= 1) {
+            const userPoint = await UserPoint.findOne({user});
+            console.log({ userPoint });
 
             // Check point for exchange
             if(!userPoint) {
-                await UserPoint.create({
+                userPoint = await UserPoint.create({
                     user,
                     point: 0
                 });
@@ -47,20 +48,25 @@ module.exports = {
             }
 
             // Save new point and new coin
+            const coin = parseInt(point / sails.config.coinExchangeRatio);
+            const newPoint = userPoint.point - (sails.config.coinExchangeRatio*coin);
 
-            let newPoint = userPoint.point - point;
-            let coin = point / sails.config.coinExchangeRatio;
             await UserPoint.update({user}, {$set:{point:newPoint}}, {new:true});
-            let userCoin = await UserCoin.findOne({user});
+
+            const userCoin = await UserCoin.findOne({user});
+            console.log({ userCoin });
+
+            // Check point for exchange
             if(!userCoin) {
-                await UserCoin.create({
+                userCoin = await UserCoin.create({
                     user,
                     coin
                 });
-            } else {
-                let newCoin = userCoin.coin + coin;
-                await UserCoin.update({user}, {coin:newCoin}, {new:true});
+                return true;
             }
+            const newCoin = userCoin.coin + coin;
+
+            await UserCoin.update({user}, {$set:{coin:newCoin}}, {new:true});
 
             // Random code
             let code = faker.random.alphaNumeric(10);
@@ -75,10 +81,12 @@ module.exports = {
                 coin,
                 status: 1,
                 code
-
             };
             // Save log
-            await LogUserCoinExchange.create(dataLog);
+            let logUserCoinExchange = await LogUserCoinExchange.create(dataLog);
+
+            await LogUserCoinExchange.findByIdAndUpdate({_id: logUserCoinExchange._id}, {status: 0}, {new: true});
+            
             return true;
         }
         return sails.errors.pointIsInvalid;
@@ -93,6 +101,6 @@ module.exports = {
 
     coinExchangeHistory: async(user) => {
         let fieldSelect = "id coin createdAt status";
-        return await LogUserCoinExchange.find({user}).select(fieldSelect);
+        return await LogUserCoinExchange.find({user}).select(fieldSelect).sort({createdAt: -1});
     },
 }

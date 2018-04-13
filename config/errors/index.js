@@ -10,7 +10,7 @@ const errors = {
     code: 2
   },
   wrongPasswordOrEmail: {
-    message: 'wrong_password_or_email',
+    message: 'パスワードまたはメールアドレスは正しくありません。',
     code: 3
   },
   userHasVerified: {
@@ -227,6 +227,94 @@ const errors = {
   conditionNotFound: {
     message: 'condition_not_found',
     code: 52
+  },
+  findLuckyNumberFailed: {
+    message: 'Find lucky number failed',
+    code: 53
+  },
+  auctionFinished: {
+    message: 'auction_finished',
+    code: 54
+  },
+  auctionFailed: {
+    message: 'auction_failed',
+    code: 55
+  },
+  auctionWaitingResult: {
+    message: 'auction_is_running_lucky_number',
+    code: 56
+  },
+  enoughCoinChanceBuy: {
+    message: 'enough_coin_chance_buy',
+    code: 57
+  },
+  userWithoutAnyFriend: {
+    message: 'without_any_friend',
+    code: 58
+  },
+  winnerNotFound: {
+    message: 'winner_not_found',
+    code: 59
+  },
+  deleteContactFail: {
+    message: 'contact_not_found',
+    code: 60
+  },
+  logoutFail: {
+    message: 'logout_fail',
+    code: 61
+  },
+  discountTicketsParamMalformed: {
+    message: 'discount_tickets_param_malformed',
+    code: 62
+  },
+  discountTicketIdNullOrMalformed: {
+    message: 'discount_ticket_id_null_or_malformed',
+    code: 63
+  },
+  discountTicketNotFound: {
+    message: 'discount_ticket_not_found',
+    code: 64
+  },
+  valueDiscountMalformed: {
+    message: 'value_discount_malformed',
+    code: 65
+  },
+  discountTicketExpired: {
+    message: 'discount_ticket_expired',
+    code: 66
+  },
+  totalBuyLesserTotalDiscount: {
+    message: 'total_buy_lesser_total_discount',
+    code: 67
+  },
+  createReportFail: {
+    message: 'create_report_fail',
+    code: 68
+  },
+  sentReport: {
+    message: 'sent_reported',
+    code: 69
+  },
+  userNotExist: {
+    message: 'user_not_exist',
+    code: 70
+  },
+  userBlocked: {
+    message: 'user_blocked',
+    code: 71
+  },
+  confirmPasswordFail: {
+    message: 'パスワードを認証するは必須です。',
+    code: 72
+  },
+  emailAdminExists: {
+    message: '選択されたメールアドレスは正しくありません。',
+    code: 73
+  },
+  comparePasswordFail: {
+    message: 'パスワードは確認用項目と一致していません。',
+    code: 74
   }
 };
 

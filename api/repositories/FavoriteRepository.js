@@ -13,7 +13,7 @@ module.exports = {
 
     favoriteList: async (user) => {
         try {
-            return UserFavoriteProduct.find({user}).select(fieldFavorite);
+            return UserFavoriteProduct.find({user}).select(fieldFavorite).sort({createdAt: -1});
         } catch(error) {
             throw error;
         }

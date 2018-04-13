@@ -1,11 +1,10 @@
-'use strict';
+"use strict";
 
 module.exports = asyncWrap(async (req, res, next) => {
-  req.checkBody('content', 'require_content').notEmpty();
+    req.checkBody('content', req.__('内容は必須です。')).notEmpty();
 
-  const validationResult = await req.getValidationResult();
-  if (!validationResult.isEmpty())
-    return res.validationErrors(validationResult.array());
+    let validationResult = await req.getValidationResult();
+    if (!validationResult.isEmpty()) return res.validationErrors(validationResult.array());
 
-  next();
+    next();
 });

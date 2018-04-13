@@ -10,5 +10,4 @@ const UserChanceBuySchema = new mongoose.Schema({
 }, { timestamps: true });
 UserChanceBuySchema.plugin(mongoosePaginate);
 
-
 module.exports = mongoose.model('UserChanceBuy', UserChanceBuySchema);

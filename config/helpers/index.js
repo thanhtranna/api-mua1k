@@ -303,7 +303,36 @@ module.exports = {
     return {
       select: selectFields,
       page: page,
-      limit: limit
+      limit: limit,
+      sort: {
+        createdAt: -1,
+        updatedAt: -1
+      }
+    };
+  },
+
+  /**
+   *
+   * @param limit
+   * @param page
+   */
+  optionPaginateContact: (page = 1, limit = sails.config.paginateLimit) => {
+    let selectFields = '-__v';
+    let populate = [
+      {
+        path: 'category',
+        select: 'name'
+      },
+      {
+        path: 'user',
+        select: 'email nickname'
+      }
+    ];
+    return {
+      select: selectFields,
+      page: page,
+      limit: limit,
+      populate: populate
     };
   },
 
@@ -316,5 +345,14 @@ module.exports = {
     let pathArr = urlImage.split('/');
     let name = pathArr[pathArr.length - 1];
     return name;
+  },
+
+  addPrefix: key => {
+    return `mua1k-${key}`;
   }
+
+  /**
+   * Increment time from current
+   * @return {date}
+   */
 };

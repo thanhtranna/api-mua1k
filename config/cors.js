@@ -72,5 +72,6 @@ module.exports.cors = {
    *                                                                          *
    ***************************************************************************/
 
-  headers: 'content-type, x-access-token, admin-token'
+  headers:
+    'content-type, x-access-token, admin-token, Access-Control-Allow-Origin'
 };

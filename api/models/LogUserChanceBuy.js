@@ -21,12 +21,12 @@ let LogUserChanceBuySchema = new mongoose.Schema(
             ref: "Auction"
         },
         luckyNumber: {
-            type: Number
+            type: String
         },
-        // userChanceBuy: {
-        //     type: mongoose.Schema.Types.ObjectId,
-        //     ref: 'UserChanceBuy'
-        // },
+        userChanceBuy: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'UserChanceBuy'
+        },
         // isWinner: {
         //     type: Boolean,
         //     default: false

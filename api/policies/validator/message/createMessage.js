@@ -1,18 +1,18 @@
 /**
  * This file will validate create message
  */
-module.exports = async function(req, res, next) {
-  try {
-    req.checkBody('title', req.__('title_is_required')).notEmpty();
-    req.checkBody('description', req.__('description_is_required')).notEmpty();
-    req.checkBody('category', req.__('category_is_required')).notEmpty();
+module.exports = async function (req, res, next) {
+    try {
+        req.checkBody('title', req.__('タイトルは必須です。')).notEmpty();
+        req.checkBody('description', req.__('説明は必須です。')).notEmpty();
+        req.checkBody('category', req.__('価格は必須です。')).notEmpty();
 
-    const validationResult = await req.getValidationResult();
-    if (validationResult.isEmpty()) {
-      return next();
+        let validationResult = await req.getValidationResult();
+        if (validationResult.isEmpty()) {
+            return next();
+        }
+        res.validationErrors(validationResult.array());
+    } catch (error) {
+        res.serverError({}, error);
     }
-    res.validationErrors(validationResult.array());
-  } catch (error) {
-    res.serverError({}, error);
-  }
 };

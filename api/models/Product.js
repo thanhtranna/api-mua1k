@@ -13,7 +13,7 @@ const ProductSchema = new mongoose.Schema({
     price            : { type: Number },
     isFavorite       : { type: Boolean,  defaultsTo: false},
     expDateNumber    : { type: Number },
-    category         : { type: mongoose.Schema.ObjectId, ref: 'Category' },
+    category         : [{ type: mongoose.Schema.ObjectId, ref: 'Category' }],
     condition        : { type: mongoose.Schema.ObjectId, ref: 'Condition' },
     deletedAt        : { type: Date },
 }, { timestamps: true });

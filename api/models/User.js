@@ -5,7 +5,8 @@ const mongoosePaginate = require('mongoose-paginate');
 const socials = {
     facebook: 'facebook',
     twitter: 'twitter',
-    line: 'line'
+    line: 'line',
+    bap: 'bap'
 };
 
 const UserSchema = new mongoose.Schema({
@@ -24,6 +25,8 @@ const UserSchema = new mongoose.Schema({
     ip                  : { type: String },
     device              : { type: String },
     address             : { type: mongoose.Schema.ObjectId, ref: 'UserAddress' },
+    deviceToken         : { type: String },
+    accessToken         : { type: String },
     deletedAt           : { type: Date },
 }, { timestamps: true });
 
