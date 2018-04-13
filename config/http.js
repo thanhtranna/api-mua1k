@@ -1,14 +1,3 @@
-/**
- * HTTP Server Settings
- * (sails.config.http)
- *
- * Configuration for the underlying HTTP server in Sails.
- * Only applies to HTTP requests (not WebSockets)
- *
- * For more information on configuration, check out:
- * http://sailsjs.org/#!/documentation/reference/sails.config/sails.config.http.html
- */
-
 'use strict';
 
 const jwt = require('jsonwebtoken');
@@ -30,8 +19,10 @@ module.exports.http = {
   middleware: {
     logger: require('morgan')('dev'),
     expressValidator: require('express-validator')(),
+    static: require('express').static('./assets'),
 
     order: [
+      'static',
       'logger',
       'bodyParser',
       'expressValidator',
@@ -39,18 +30,24 @@ module.exports.http = {
       'methodOverride',
       'decodedToken',
       'decodedAdminToken',
+      // '$custom',
       'router',
       'favicon',
       '404',
       '500'
     ],
 
+    // customMiddleware: (app) => {
+    //     const files = require('express').static('./tmp');
+    //     app.use('/api/v1/image', files());
+    // },
+
     decodedToken: async (req, res, next) => {
       try {
-        const token = req.headers['x-access-token'];
+        let token = req.headers['x-access-token'];
         if (!token) return next();
 
-        const userId = await jwtVerify(token);
+        let userId = await jwtVerify(token);
         req.user = await User.findById(userId);
         next();
       } catch (error) {
@@ -64,7 +61,7 @@ module.exports.http = {
 
     decodedAdminToken: async (req, res, next) => {
       try {
-        const adminToken = req.headers['admin-token'];
+        let adminToken = req.headers['admin-token'];
         if (!adminToken) return next();
 
         let adminId = await jwtVerify(adminToken);

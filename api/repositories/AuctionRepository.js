@@ -18,6 +18,24 @@ const AuctionRepository = {
         }
     },
 
+    getStatusAuction: async (auctionId) => {
+        try {
+            let auction = await Auction.findOne({_id: auctionId});
+            return auction.status;
+        } catch (error) {
+            throw error;
+        }
+    },
+
+    getChanceNumberAuction: async (auctionId) => {
+        try {
+            let auction = await Auction.findOne({_id: auctionId});
+            return auction.chanceNumber;
+        } catch (error) {
+            throw error;
+        }
+    },
+
     /**
      * Function createAuction.
      * @description Create new auction.
@@ -28,9 +46,13 @@ const AuctionRepository = {
         try {
             let product = await ProductRepository.findProduct(data.product);
             let numberAuction = await Auction.count({product: data.product});
+            let expiredAt = moment(data.startAt).add(90, 'days');
             data.aid = numberAuction + 1;
             data.chanceNumber = product.chanceNumber;
             data.status = sails.config.auction.inProgressAuction;
+            data.keyword = `${product.name} ${product.description} ${data.keyword}`;
+            data.expiredAt = expiredAt;
+
 
             if (product.price >= sails.config.valuePriceIs1k) {
                 if (product.price%sails.config.valuePriceIs1k == 0) data.is1kYen = true;
@@ -47,7 +69,6 @@ const AuctionRepository = {
 
             await AuctionService.createArrayLuckyNumbers(auction.id, auction.chanceNumber);
 
-            sails.log.debug(auction);
             return auction;
         } catch (err) {
             throw err;
@@ -106,7 +127,7 @@ const AuctionRepository = {
                     expiredAt: {$gte: new Date()}
                 })
                 .populate('product', productFields)
-                .select('-updatedAt -createdAt -isSuggest -chanceNumber -__v')
+                .select('-updatedAt -createdAt -isSuggest -__v -luckyNumbers')
                 .lean();
 
             // throwErrorIfAuctionNotFound = true, let throw error
@@ -130,8 +151,8 @@ const AuctionRepository = {
     getAuctionsByType: async (type, page) => {
         try {
             let sortByTypes = {};
-            sortByTypes[Auction.types.popular] = {aid: -1};
-            sortByTypes[Auction.types.expiringSoon] = {expiredAt: -1};
+            sortByTypes[Auction.types.popular] = {aid: -1, createdAt: -1};
+            sortByTypes[Auction.types.expiringSoon] = {expiredAt: 1};
             sortByTypes[Auction.types.latest] = {startAt: -1};
             sortByTypes[Auction.types.highPrice] = {chanceNumber: -1};
             sortByTypes[Auction.types.lowPrice] = {chanceNumber: 1};
@@ -182,7 +203,9 @@ const AuctionRepository = {
                     },
                     status: 1,
                     is1kYen: 1,
-                    totalSold: 1
+                    totalSold: 1,
+                    expiredAt: 1,
+                    numberDateExpire: 1
                 }
             };
             let skip = {$skip: sails.helpers.getSkipItemByPage(page)};
@@ -194,6 +217,92 @@ const AuctionRepository = {
             aggregateOptions.push(limit);
 
             return await Auction.aggregate(aggregateOptions);
+        }
+        catch (error) {
+            throw error;
+        }
+    },
+
+    /**
+     * Get auctions by products
+     * @param auctions
+     * @param {number} page
+     * @return {Promise.<array>} array auctions
+     */
+    getAuctionByKeyword: async (auctions, page) => {
+        try {
+            console.log(auctions);
+            return await Auction.aggregate([
+                {
+                    $match: {
+                        status: Auction.status.waiting,
+                        _id: {$in: auctions},
+                        deletedAt: {$exists: false},
+                        startAt: {$lte: new Date()},
+                        expiredAt: {$gte: new Date()}
+                    }
+                },
+                {
+                    $lookup: {
+                        from: 'products',
+                        localField: 'product',
+                        foreignField: '_id',
+                        as: 'products'
+                    }
+                },
+                {
+                    $lookup: {
+                        from: 'userchancebuys',
+                        localField: '_id',
+                        foreignField: 'auction',
+                        as: 'sold'
+                    }
+                },
+                {
+                    $addFields: {
+                        totalSold: {$sum: '$sold.number'},
+                        product: {$arrayElemAt: ['$products', 0]},
+                    }
+                },
+                {$sort: {createdAt: 1}},
+                {
+                    $project: {
+                        aid: 1,
+                        product: {
+                            name: 1,
+                            description: 1,
+                            featureImage: 1,
+                            chanceNumber: 1,
+                            isFavorite: 1
+                        },
+                        status: 1,
+                        is1kYen: 1,
+                        totalSold: 1
+                    }
+                },
+                {$skip: sails.helpers.getSkipItemByPage(page)},
+                {$limit: sails.config.paginateLimit},
+            ]);
+        }
+        catch (error) {
+            throw error;
+        }
+    },
+
+    getTotalAuctionByKeyword: async (auctions) => {
+        try {
+            let data = await Auction.aggregate([
+                {
+                    $match: {
+                        status: Auction.status.waiting,
+                        _id: {$in: auctions},
+                        deletedAt: {$exists: false},
+                        startAt: {$lte: new Date()},
+                        expiredAt: {$gte: new Date()}
+                    }
+                }
+            ]);
+            return data.length;
         }
         catch (error) {
             throw error;
@@ -240,7 +349,7 @@ const AuctionRepository = {
                         product: {$arrayElemAt: ['$products', 0]},
                     }
                 },
-                {$sort: {createdAt: 1}},
+                {$sort: {createdAt: -1}},
                 {
                     $project: {
                         aid: 1,
@@ -256,8 +365,8 @@ const AuctionRepository = {
                         totalSold: 1
                     }
                 },
-                {$limit: sails.config.paginateLimit},
-                {$skip: sails.helpers.getSkipItemByPage(page)}
+                {$skip: sails.helpers.getSkipItemByPage(page)},
+                {$limit: sails.config.paginateLimit}
             ]);
         }
         catch (error) {
@@ -271,19 +380,13 @@ const AuctionRepository = {
     getAuctionsByKeyword: async (keyword, page) => {
         try {
             // get product
-            let products = await ProductRepository.getArrayIdByKeyword(keyword);
-
-            // get auction
-            let auctions = await AuctionRepository.getAuctionByProducts(products, page);
+            let auctions = await AuctionRepository.getArrayIdByKeyword(keyword);
 
             // get total result
-            let totalResult = await Auction.count({
-                status: Auction.status.waiting,
-                product: {$in: products},
-                deletedAt: {$exists: false},
-                startAt: {$lte: new Date()},
-                expiredAt: {$gte: new Date()}
-            });
+            let totalResult = await AuctionRepository.getTotalAuctionByKeyword(auctions);
+
+            // get auction
+            auctions = await AuctionRepository.getAuctionByKeyword(auctions, page);
 
             return { auctions, totalResult }
         }
@@ -303,7 +406,6 @@ const AuctionRepository = {
 
             // get products by category (id) -> return array id (object id)
             let arrayProductId = await ProductRepository.getArrayIdByCategory(categoryId);
-
             // get auctions by products id
             return await AuctionRepository.getAuctionByProducts(arrayProductId, page);
         } catch (error) {
@@ -324,7 +426,6 @@ const AuctionRepository = {
                 })
                 .populate('user', 'uid nickname avatar')
                 .select('number user');
-
             let firstBuy = _.find(firstLastMostBuy, {_id: auction.firstBuy}),
                 lastBuy = _.find(firstLastMostBuy, {_id: auction.lastBuy}),
                 mostBuy = _.find(firstLastMostBuy, {_id: auction.mostBuy});
@@ -386,11 +487,31 @@ const AuctionRepository = {
                 .select('user -_id')
                 .lean();
 
+            // Find winner return null
+            if (!winner) {
+                sails.log.error('Find winner return null');
+                return null;
+            }
+
             winner.chanceBought = await AuctionRepository.getWinnerChanceBought(auctionId, winner.user);
 
             return winner;
         }
         catch (error) {
+            throw error;
+        }
+    },
+
+    findAllAuctionByProduct: async(productId) => {
+        try {
+            return await Auction.find({
+                product: productId,
+                status: { $in: [Auction.status.waiting, Auction.status.running] },
+                isBlocked: false,
+                deletedAt: { $exists: false }
+            }).select('_id')
+              .sort({createdAt: -1});
+        } catch (error) {
             throw error;
         }
     },
@@ -402,6 +523,7 @@ const AuctionRepository = {
      */
     getDetailAuction: async (auctionId) => {
         try {
+
             // get basic auction info
             let auction = await AuctionRepository.findById(auctionId);
 
@@ -409,10 +531,18 @@ const AuctionRepository = {
                 AuctionRepository.getFirstLastMostBuy(auction),
                 AuctionRepository.getChanceAvailable(auction),
                 AuctionRepository.getAuctionWinner(auction.status, auction._id),
-                AuctionRepository.getAuctionChancesSold(auctionId, 1) // 1 is first page
+                AuctionRepository.getAuctionChancesSold(auctionId, 1), // 1 is first page
+                AuctionRepository.findAllAuctionByProduct(auction.product)
             ];
 
             promises = await Promise.all(promises);
+
+            // newest auction is waiting
+            if (auction.status === Auction.status.finished) {
+                if (promises[4].length > 0) {
+                    auction.lastestAuction = promises[4][0]._id;
+                }
+            }
 
             let firstLastMostBuy = promises[0],
                 chanceAvailable = promises[1],
@@ -455,6 +585,7 @@ const AuctionRepository = {
             .find({auction: auctionId})
             .populate('user', 'uid nickname avatar')
             .select('ip number createdAt user')
+            .sort({createdAt: -1})
             .skip(sails.config.getSkipItemByPage(page))
             .limit(sails.config.paginateLimit);
     },
@@ -470,7 +601,9 @@ const AuctionRepository = {
             let auctions = await Auction
                 .find({
                     product: product,
-                    status: {$in: [2, 3]}
+                    status: {$in: [2, 3]},
+                    isBlocked: false,
+                    deletedAt: { $exists: false }
                 })
                 .populate('product', 'name')
                 .select('aid product status luckyNumber finishAt updatedAt')
@@ -533,26 +666,33 @@ const AuctionRepository = {
      */
     luckyNumberInfo: async (auction) => {
         try {
-            let winner = await LogAuctionWinner.findOne({auction: auction._id});
+            if (auction.status !== Auction.status.finished) {
+                return await LogAuctionWinnerRepository
+                    .findLast50SuccessAuctions(new Date());
+            } else {
+                let winner = await LogAuctionWinner.findOne({
+                    auction: auction._id
+                });
+                if (!winner) {
+                    throw sails.helpers.generateError({
+                        code: sails.errors.winnerNotFound.code,
+                        message: 'Winner not found'
+                    });
+                }
 
-            let last50SuccessAuctions = await LogAuctionWinner
-                .find({
-                    finishAt: {$lt: moment(winner.finishAt).format()}
-                })
-                .populate('user', 'nickname')
-                .select('user auction finishAt')
-                .sort({finishAt: -1})
-                .limit(50);
+                let last50SuccessAuctions = await LogAuctionWinnerRepository
+                    .findLast50SuccessAuctions(winner.finishAt);
 
-            return {
-                numberA: winner.numberA,
-                numberB: winner.numberB,
-                luckyNumber: winner.luckyNumber,
-                finishAt: winner.finishAt,
-                chanceNumber: auction.chanceNumber,
-                weatherUrl: sails.config.weatherUri,
-                last50SuccessAuctions
-            };
+                return {
+                    numberA: winner.numberA,
+                    numberB: winner.numberB,
+                    luckyNumber: winner.luckyNumber,
+                    finishAt: moment(winner.finishAt).format('YYYY-MM-DD H:mm:ss SSS'),
+                    chanceNumber: auction.chanceNumber,
+                    weatherUrl: sails.config.weatherUri,
+                    last50SuccessAuctions
+                };
+            }
         }
         catch (error) {
             throw error;
@@ -562,11 +702,22 @@ const AuctionRepository = {
     /**
      * Buy Chances
      */
-    buyChances: async (auctionsInCart, userId) => {
+    buyChances: async (auctionsInCart, discountTickets = null, userId) => {
         try {
+            let totalAmount = 0;
+            let value1Chance = sails.config.value1Chance;
+            let userCoin = await AuctionRepository.getDepositBalanceByUser(userId);
+            if(!userCoin) {
+                return {
+                    error: 1,
+                    message: sails.errors.enoughCoinChanceBuy
+                }
+            }
+
             for (let i = 0; i < auctionsInCart.length; i++) {
                 let auctionId = auctionsInCart[i].id,
                     amount = auctionsInCart[i].amount;
+                    totalAmount += auctionsInCart[i].amount;
 
                 if (!auctionId) continue;
 
@@ -579,13 +730,12 @@ const AuctionRepository = {
                 let luckyNumbers = await AuctionService.getRandomLuckyNumbers(auctionId, amount);
 
                 // create UserChanceBuy
-                let userChanceBuy = new UserChanceBuy({
+                let userChanceBuy = await UserChanceBuy.create({
                     user: sails.helpers.toObjectId(userId),
                     auction: sails.helpers.toObjectId(auctionId),
                     number: amount,
                     ip: sails.helpers.getUserIpAddress()
                 });
-                await userChanceBuy.save();
 
                 // create LogUserChanceBuy
                 let logs = [];
@@ -593,6 +743,7 @@ const AuctionRepository = {
                     logs.push({
                         user: sails.helpers.toObjectId(userId),
                         auction: sails.helpers.toObjectId(auctionId),
+                        userChanceBuy: userChanceBuy._id,
                         luckyNumber: luckyNumbers[i]
                     })
                 }
@@ -604,16 +755,18 @@ const AuctionRepository = {
                     auction.mostBuy = userChanceBuy._id;
                     await auction.save();
                 } else {
-                    if (auction.mostBuy === null || auction.mostBuy.number < userChanceBuy.number)
-                        auction.mostBuy = userChanceBuy._id;
+                    let mostBuy = await AuctionService.findMostChanceBuy(auctionId);
+                    auction.mostBuy = mostBuy._id;
                     await auction.save();
                 }
 
-                // If Auction Sold out
-                if (await AuctionService.isAuctionSoldOut(auctionId)){
-                    let finishAt = moment()
-                        .add(sails.config.findLuckyNumberAfter.time, sails.config.findLuckyNumberAfter.unit)
-                        .format();
+                // If chance number of Auction out
+                if (await AuctionService.getChanceAvailable(auctionId) === 0){
+                    let findLuckyNumberAfter = sails.config.findLuckyNumberAfter,
+                        current = new Date();
+                    let finishAt = new Date(current.getTime() + findLuckyNumberAfter);
+
+                    if (moment(finishAt).minute() === 59) finishAt = moment(finishAt).minute(58);
 
                     // Update last buy
                     auction.lastBuy = userChanceBuy._id;
@@ -621,12 +774,61 @@ const AuctionRepository = {
                     auction.status = 2;
                     await auction.save();
 
-                    /** Run CronJob if auction sold out */
                     AuctionService.finishAuctionJob(finishAt, {
-                        auctionId: auction.id,
+                        auctionId: auction._id,
                         chanceNumber: auction.chanceNumber
                     });
                 }
+            }
+
+            if (discountTickets !== null && !Array.isArray(discountTickets).toString() === false) {
+                let totalValueDiscount = 0;
+
+                for (let i = 0; i < discountTickets.length; i++) {
+                    let discountTicketId = discountTickets[i].id;
+                    let value = await DiscountTicketRepository.getValueDiscount(discountTicketId);
+                    totalValueDiscount += value;
+                }
+                let subtractAmount = totalAmount*value1Chance-totalValueDiscount;
+
+                // save log subtract coin
+                let logSubtractCoin = await LogSubtractCoin.create({
+                    user: userId,
+                    coin: subtractAmount,
+                    status: 1,
+                });
+
+                // subtract coin of user on BAP Platform
+                let data = await AuctionRepository.postSubtractAmount(userId, subtractAmount);
+
+                if (data.status && data.status !== 200) {
+                    await LogSubtractCoin.findByIdAndUpdate({_id: logSubtractCoin._id}, {status: 0});
+                }
+
+                // remove discount ticket used
+                if (discountTickets.length > 0)
+                    await DiscountTicketRepository.removeDiscountTicket(discountTickets);
+            } else {
+                let subtractAmount = totalAmount*value1Chance;
+
+                // save log subtract coin
+                let logSubtractCoin = await LogSubtractCoin.create({
+                    user: userId,
+                    coin: subtractAmount,
+                    status: 1,
+                });
+
+                // subtract coin of user on BAP Platform
+                let data = await AuctionRepository.postSubtractAmount(userId, subtractAmount);
+
+                if (data.status && data.status !== 200) {
+                    await LogSubtractCoin.findByIdAndUpdate({_id: logSubtractCoin._id}, {status: 0});
+                }
+            }
+
+            return {
+                error: 0,
+                message: "Success"
             }
         }
         catch (error) {
@@ -650,8 +852,12 @@ const AuctionRepository = {
             page: page,
             select: [
                 '-__v',
-            ]
+            ],
+            sort: {
+                createdAt: -1
+            }
         };
+
         let userChanceBuys = await UserChanceBuy.paginate({user, auction}, options);
         userChanceBuys = userChanceBuys.docs;
         let newData = [];
@@ -659,7 +865,8 @@ const AuctionRepository = {
             let userChanceBuy = {...userChanceBuys[i]};
             let query = {
                 user: userChanceBuy.user,
-                auction:userChanceBuy.auction
+                auction:userChanceBuy.auction,
+                userChanceBuy: userChanceBuy._id
             };
             userChanceBuy.logUserChanceBuy = await LogUserChanceBuy.find(query).select("_id luckyNumber");
             delete userChanceBuy.id;
@@ -681,7 +888,7 @@ const AuctionRepository = {
         try {
             let fieldAuction = ["luckyNumber", "status", "product", "updateAt"];
             let fieldProduct = ["name", "description", "images", "featureImage", "chanceNumber"];
-            let fieldUser = ["id", "nickname", "avatar"];
+            let fieldUser = ["id", "nickname", "avatar", "uid"];
             let query = {
                 page:page,
                 limit: sails.config.paginateLimit,
@@ -707,20 +914,50 @@ const AuctionRepository = {
                     "auction"
                 ]
             };
-            let userChanceBuys = await UserChanceBuy.paginate({user:id}, query);
+            // let userChanceBuys = await UserChanceBuy.paginate({user:id}, query);
+            let userChanceBuys = await UserChanceBuy.aggregate([
+                {
+                    $match: {user:sails.helpers.toObjectId(id)}
+                },
+                {
+                    $group: {
+                        _id: "$auction",
+                        numberChanceBuy: {$sum: "$number"},
+                        createdAt: {$max: "$createdAt"}
+                    }
+                },
+                {
+                    $skip: sails.helpers.getSkipItemByPage(page)
+                },
+                {
+                    $limit: sails.config.paginateLimit
+                },
+                {
+                    $sort: {
+                        createdAt: -1
+                    }
+                }
+            ]);
+            for(let i in userChanceBuys) {
+                userChanceBuys[i].auction = await Auction.findOne({_id: userChanceBuys[i]._id})
+                    .select("luckyNumber status product updateAt chanceNumber")
+                    .populate('product', fieldProduct);
+            }
             let data = [];
-            userChanceBuys = userChanceBuys.docs;
+            // userChanceBuys = userChanceBuys.docs;
             for(let i in userChanceBuys) {
                 let userWinner = await LogAuctionWinner.findOne({auction:  userChanceBuys[i].auction._id}).populate({
                     path:"user",
                     select: fieldUser
-                }).lean(true).select("_id user createdAt");
-                sails.log.info(userWinner);
+                }).lean(true).select("_id user createdAt finishAt");
                 let userChanceBuy = {...userChanceBuys[i]};
                 if(userWinner !== null) {
                     userChanceBuy.winner = {...userWinner};
                     userChanceBuy.winner = userChanceBuy.winner.user;
                     userChanceBuy.winner.createdAt = userWinner.createdAt;
+                    userChanceBuy.winner.finishAt = userWinner.finishAt;
+                    userChanceBuy.winner.chanceBought = await AuctionRepository
+                        .getWinnerChanceBought(userChanceBuys[i].auction._id, userWinner.user)
                 } else {
                     userChanceBuy.winner = userWinner;
                 }
@@ -736,7 +973,6 @@ const AuctionRepository = {
     getAuctions: async (page = 1) => {
         try {
             let option = sails.helpers.optionPaginateAuction(page);
-            sails.log(option);
             let auctions = await Auction.paginate({}, option);
             return auctions;
         } catch (err) {
@@ -751,7 +987,6 @@ const AuctionRepository = {
                 deletedAt: undefined
             };
             let products = await Product.find(query, ['_id', 'name']);
-            if (!products || products.length === 0) return {};
             let arrayProductId = sails.helpers.transferToArrayValue(products);
             let queryAuction = {product: {"$in": arrayProductId}};
             let option = sails.helpers.optionPaginateAuction(page);
@@ -817,8 +1052,10 @@ const AuctionRepository = {
     winAuctionHistoryByUser: async (id, page) => {
         try {
             let options = {
+                sort : { createdAt : -1 },
                 select: [
-                    "auction"
+                    "auction",
+                    "createdAt"
                 ],
                 lean: true,
                 populate: [
@@ -829,7 +1066,8 @@ const AuctionRepository = {
                             "luckyNumber",
                             "chanceNumber",
                             "product",
-                            "finishAt"
+                            "finishAt",
+                            "createdAt"
                         ],
                         populate: [
                             {
@@ -853,6 +1091,12 @@ const AuctionRepository = {
             for(let i in logAuctionWinners) {
                 let logAuctionWinner = {...logAuctionWinners[i]};
                 delete logAuctionWinner.id;
+                let auctionChanceBuys = await UserChanceBuy.find({user:id, auction: logAuctionWinner.auction});
+                let total = 0;
+                for(let j in auctionChanceBuys) {
+                    total += parseInt(auctionChanceBuys[j].number);
+                }
+                logAuctionWinner.numberChanceBuy = total;
                 newData.push(logAuctionWinner);
             }
             return newData;
@@ -971,7 +1215,157 @@ const AuctionRepository = {
             throw err;
         }
 
-    }
+    },
+
+    findByCategories: async (page) => {
+        try {
+            // get products by category (id) -> return array id (object id)
+            let arrayProductId = await ProductRepository.getArrayIdByCategories();
+
+            // get auctions by products id
+            return await AuctionRepository.getAuctionByProducts(arrayProductId, page);
+        } catch (error) {
+            throw error;
+        }
+    },
+    /**
+     * Find product by keyword
+     * @param keyword
+     * @return {Promise.<{}>}
+     */
+    findByKeyword: async (keyword) => {
+        try {
+            return await Auction
+                .find({ keyword: new RegExp(keyword, 'i') })
+                .select('_id name');
+        }
+        catch (error) {
+            throw error;
+        }
+    },
+    /**
+     * Get all product by keyword and return array id
+     * @param {string} keyword
+     * @return {Promise.<>}
+     */
+    getArrayIdByKeyword: async (keyword) => {
+        try {
+            let auctions = await AuctionRepository.findByKeyword(keyword);
+            // TODO: debug why can't use helper
+            let arrayId = [];
+            auctions.forEach(product => {
+                arrayId.push(product._id)
+            });
+            return arrayId;
+        }
+        catch (error) {
+            throw error;
+        }
+    },
+
+    /**
+     * get Auction validation
+     */
+    findAuctionValidate: async (auctionId) => {
+        try {
+            let auction = await Auction.findOne({
+                _id: sails.helpers.toObjectId(auctionId),
+                deletedAt: {$exists: false},
+                startAt: {$lte: new Date()},
+                expiredAt: {$gte: new Date()}
+            })
+                .populate('product', 'name')
+                .select('product aid chanceNumber status');
+            return auction;
+        } catch (error) {
+            throw error;
+        }
+    },
+
+    /**
+     * @API: Get deposit balance BAP platform
+     * @param: accessToken BAP platform
+     * @return: deposit Current coin of user
+     */
+    getDepositBalance: async(accessToken) => {
+      try {
+          let url = `${sails.config.BAPUri}deposit-balance`;
+          let deposit = 0;
+          let responseData = await HttpService.getPlatform(url, accessToken);
+          if (responseData.status === 200) {
+            deposit = responseData.data.deposit ? responseData.data.deposit : deposit;
+          }
+          return deposit;
+      } catch (error) {
+          throw error;
+      }
+    },
+
+    /**
+     * @API: Get deposit balance BAP platform
+     * @param: userid Server Tokubuy
+     * @return: deposit Current coin of user
+     */
+    getDepositBalanceByUser: async(userId) => {
+      try {
+          let url = `${sails.config.BAPUri}deposit-balance`;
+          let deposit = 0;
+          let user = await User.findOne({_id: userId});
+          let accessToken = user.accessToken ? user.accessToken : '';
+          let responseData = await HttpService.getPlatform(url, accessToken);
+          if (responseData.status === 200) {
+            deposit = responseData.data.deposit ? responseData.data.deposit : deposit;
+          }
+          return deposit;
+      } catch (error) {
+          throw error;
+      }
+    },
+
+    /**
+     * @API: Post subtract coin of user BAP platform
+     * @param: - userId Server Tokubuy
+     *         - amount subtract
+     * @return: data
+     */
+    postSubtractAmount: async(userId, amount) => {
+        try {
+            let url = `${sails.config.BAPUri}transaction/subtract`;
+            let body = {
+              "amount": amount,
+              "app_id": sails.config.BAPAppId,
+            };
+            let user = await User.findOne({_id: userId});
+            let accessToken = user.accessToken ? user.accessToken : '';
+            let data = await HttpService.postPlatform(url, accessToken, body);
+            return data;
+        } catch (error) {
+
+            throw error;
+        }
+    },
+
+    /**
+     * @API: Post add coin of user BAP platform
+     * @param: - userId server Tokubuy
+     *         - amount add
+     * @return: data
+     */
+    postAddAmount: async(userId, amount) => {
+        try {
+            let url = `${sails.config.BAPUri}transaction/add`;
+            let body = {
+              "amount": amount,
+              "app_id": sails.config.BAPAppId,
+            };
+            let user = await User.findOne({_id: userId});
+            let accessToken = user.accessToken ? user.accessToken : '';
+            let data = await HttpService.postPlatform(url, accessToken, body);
+            return data;
+        } catch (error) {
+            throw error;
+        }
+    },
 };
 
 module.exports = AuctionRepository;

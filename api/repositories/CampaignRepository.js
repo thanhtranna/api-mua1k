@@ -6,7 +6,7 @@ const CampaignRepository = {
     getCampaigns: async () => {
         try {
             return await Campaign
-                .find({})
+                .find({deletedAt: {$exists: false}, status: Campaign.status.active})
                 .sort({createdAt: -1})
                 .select('-__v -content')
                 .limit(sails.config.limitCampaign);
@@ -77,7 +77,8 @@ const CampaignRepository = {
                 config: PATH
             };
             let upload = await UploadService.upload(options);
-            data.banner = upload;
+            data.banner = upload[0];
+            data.banner.thumb = data.banner.origin;
             let campaign = await Campaign.create(data);
             if (!campaign) {
                 DeleteImageService.deleteOldImage(upload.origin);
@@ -95,16 +96,16 @@ const CampaignRepository = {
     updateCampaign: async (req, id) => {
         try {
             let data = req.body;
-            let options = {
-                req: req,
-                inputName: 'banner',
-                config: PATH
-            };
-            let promise = await Promise.all([
-                Campaign.findOne({'_id': id}),
-                UploadService.upload(options)
-            ]);
-            data.banner = promise[1];
+            let oldCampaign = await Campaign.findOne({'_id': id});
+            if (req.body.isFile) {
+                let options = {
+                    req: req,
+                    inputName: 'banner',
+                    config: PATH
+                };
+                let upload = await UploadService.upload(options);
+                data.banner = upload[0];
+            }
             let campaign = await Campaign
                 .findByIdAndUpdate(id, {$set: data}, {new: true});
             if (!campaign)
@@ -112,7 +113,7 @@ const CampaignRepository = {
                     code: sails.errors.updateCampaignFail.code,
                     message: 'Update campaign fail'
                 });
-            DeleteImageService.deleteOldImage(promise[0].banner.origin);
+            DeleteImageService.deleteOldImage(oldCampaign.banner.origin);
             return campaign;
         } catch (err) {
             throw err;

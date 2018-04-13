@@ -5,22 +5,22 @@
  * @docs        :: http://sailsjs.org/documentation/concepts/models-and-orm/models
  */
 
-const ContactSchema = mongoose.Schema(
-  {
-    contactCategory: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'ContactCategory'
-    },
-    email: {
-      type: String
-    },
-    content: {
-      type: String
-    }
-  },
-  {
-    timestamps: true
-  }
-);
+const mongoosePaginate = require('mongoose-paginate');
 
-module.exports = mongoose.model('Contact', ContactSchema);
+const ContactSchema = mongoose.Schema({
+    category: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "ContactCategory"
+    },
+    email: { type: String },
+    content: { type: String },
+    deletedAt: { type: Date },
+    isHandle: { type: Boolean, default: false }
+}, {
+    timestamps: true
+});
+
+ContactSchema.plugin(mongoosePaginate);
+
+module.exports = mongoose.model("Contact", ContactSchema);
+

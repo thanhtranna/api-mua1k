@@ -35,5 +35,32 @@ module.exports = [
           );
         });
     }
+  },
+
+  {
+    eventName: 'findLuckyNumberFail',
+    handler: data => {
+      EmailService.notifyFindLuckyNumberFail(data)
+        .then(() => sails.log.info('Send email notify find lucky number fail'))
+        .catch(error => {
+          // Todo: write this error to some log file
+          sails.log.error(
+            'EmailEventHandle - findLuckyNumberFail - error: ',
+            error
+          );
+        });
+    }
+  },
+
+  {
+    eventName: 'replyContact',
+    handler: data => {
+      EmailService.replyContact(data)
+        .then(() => sails.log.info('Reply contact'))
+        .catch(error => {
+          // Todo: write this error to some log file
+          sails.log.error('EmailEventHandle - replyContact - error: ', error);
+        });
+    }
   }
 ];

@@ -2,6 +2,8 @@
  * Created by daulq on 9/13/17.
  */
 
+const moment = require("moment");
+
 module.exports = {
 
     /**
@@ -61,12 +63,23 @@ module.exports = {
             let isCheckin = false;
             let logUserTask = await LogUserTask.findOne({user, task:task._id});
             if(logUserTask) {
-                // Check time user checkin
-                let updatedAt;
-                updatedAt = new Date(logUserTask.updatedAt).getTime();
-                let nows = new Date().getTime();
-                let diff = (nows - updatedAt)/24/60/60/1000;
-                if(diff >=2) {
+                let expiredAt = moment(logUserTask.updatedAt);
+                let numberExpiredAt = expiredAt.format('YYYYMMDD');
+                let nextExpiredAt = moment(logUserTask.updatedAt).add(1, 'days');
+                let numberNextExpiredAt = nextExpiredAt.format('YYYYMMDD');
+                let currentDate = moment(new Date());
+                let numberCurrentDate = currentDate.format('YYYYMMDD');
+                if (numberExpiredAt === numberCurrentDate) {
+                    isCheckin = false;
+                } else if (numberNextExpiredAt === numberCurrentDate) {
+                    let query = {
+                        $set:{
+                            value:logUserTask.value+1
+                        }
+                    };
+                    await LogUserTask.update({user, task:task._id}, query);
+                    isCheckin = true;
+                } else {
                     let query = {
                         $set:{
                             value:1
@@ -74,16 +87,6 @@ module.exports = {
                     };
                     await LogUserTask.update({user, task:task._id}, query);
                     isCheckin = true;
-                } else {
-                    if(diff >= 1 && diff < 2) {
-                        let query = {
-                            $set:{
-                                value:logUserTask.value+1
-                            }
-                        };
-                        await LogUserTask.update({user, task:task._id}, query);
-                        isCheckin = true;
-                    }
                 }
             } else {
                 let data = {
@@ -139,6 +142,9 @@ module.exports = {
         if(!userInvite) {
             return res.badRequest(sails.errors.userInviteIdNotExist);
         }
+
+        // Add friend level 1
+
         let checkFriend = await UserFriend.findOne({user:userInvite._id, "friends.user": user._id}).lean(true);
         if(!checkFriend) {
             let friends = await UserFriend.findOne({user:userInvite._id});
@@ -150,7 +156,8 @@ module.exports = {
                         user: user._id,
                         status: 1
                     }],
-                    totalFriend: 1
+                    totalFriend: 1,
+                    totalBestFriend: 1
                 })
             } else {
                 let listFriends = friends.friends;
@@ -158,6 +165,11 @@ module.exports = {
                     user: user._id,
                     status: 1
                 });
+                let totalFriend = listFriends.length;
+                let totalBestFriend = friends.totalBestFriend+1;
+                friends.totalFriend = totalFriend;
+                friends.totalBestFriend = totalBestFriend;
+                friends.friends = listFriends;
                 await friends.save();
             }
 
@@ -188,6 +200,33 @@ module.exports = {
                 userInvite = await User.findOne({uid: userInvite.invitationUserId}).lean(true);
                 if(userInvite) {
                     sails.log.info(userInvite);
+                    // Add friend level 2
+                    let friends = await UserFriend.findOne({user:userInvite._id});
+                    if(!friends) {
+
+                        await UserFriend.create({
+                            user:userInvite._id,
+                            friends: [{
+                                user: user._id,
+                                status: 2
+                            }],
+                            totalFriend: 1,
+                            totalGoodFriend: 1
+                        })
+                    } else {
+                        let listFriends = friends.friends;
+                        listFriends.push({
+                            user: user._id,
+                            status: 2
+                        });
+                        let totalFriend = listFriends.length;
+                        let totalGoodFriend = friends.totalGoodFriend+1;
+                        friends.totalFriend = totalFriend;
+                        friends.totalGoodFriend = totalGoodFriend;
+                        friends.friends = listFriends;
+                        await friends.save();
+                    }
+
                     let userPoint = await UserPoint.findOne({user:userInvite._id});
                     if(!userPoint) {
                         UserPoint.create({
@@ -213,6 +252,33 @@ module.exports = {
                     if(userInvite.invitationUserId !== undefined && userInvite.invitationUserId !== null) {
                         userInvite = await User.findOne({uid: userInvite.invitationUserId}).lean(true);
                         if(userInvite) {
+                            // Add friend level 3
+                            let friends = await UserFriend.findOne({user:userInvite._id});
+                            if(!friends) {
+
+                                await UserFriend.create({
+                                    user:userInvite._id,
+                                    friends: [{
+                                        user: user._id,
+                                        status: 3
+                                    }],
+                                    totalFriend: 1,
+                                    totalNormalFriend: 1
+                                })
+                            } else {
+                                let listFriends = friends.friends;
+                                listFriends.push({
+                                    user: user._id,
+                                    status: 3
+                                });
+                                let totalFriend = listFriends.length;
+                                let totalNormalFriend = friends.totalNormalFriend+1;
+                                friends.totalFriend = totalFriend;
+                                friends.totalNormalFriend = totalNormalFriend;
+                                friends.friends = listFriends;
+                                await friends.save();
+                            }
+
                             let userPoint = await UserPoint.findOne({user:userInvite._id});
                             if(!userPoint) {
                                 UserPoint.create({

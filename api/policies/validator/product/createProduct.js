@@ -1,32 +1,30 @@
 /**
  * This file will validate create product
  */
-module.exports = async function(req, res, next) {
-  try {
-    req.checkBody('name', req.__('name_is_required')).notEmpty();
-    req.checkBody('name', req.__('name_is_max_length')).isLength({ max: 255 });
-    req.checkBody('description', req.__('description_is_required')).notEmpty();
+module.exports = async function (req, res, next) {
+    try {
+        req.checkBody('name', req.__('タイトルは必須です。')).notEmpty();
+        req.checkBody('name', req.__('タイトルは255文字以下にしてください。')).isLength({max: 255});
+        req.checkBody('description', req.__('説明は必須です。')).notEmpty();
 
-    if (req.body.value)
-      req.checkBody('value', req.__('value_is_must_number')).isFloat();
+        if (req.body.value)
+            req.checkBody('value', req.__('割引値は数字にしてください。')).isFloat();
 
-    req.checkBody('quantity', req.__('quantity_is_required')).notEmpty();
-    req
-      .checkBody('quantity', req.__('quantity_must_integer_number'))
-      .isAlphanumeric();
-    req.checkBody('price', req.__('price_is_required')).notEmpty();
-    req.checkBody('price', req.__('price_is_must_number')).isFloat();
+        if (req.body.quantity) {
+            req.checkBody('quantity', req.__('量は必須です。')).notEmpty();
+            req.checkBody('quantity', req.__('量は整数にしてください。')).isAlphanumeric();
+        }
+            req.checkBody('price', req.__('価格は必須です。')).notEmpty();
+            req.checkBody('price', req.__('価格は数字にしてください。')).isFloat();
 
-    if (req.body.expDateNumber)
-      req
-        .checkBody('expDateNumber', req.__('expDateNumber_must_integer_number'))
-        .isAlphanumeric();
+        if (req.body.expDateNumber)
+        req.checkBody('expDateNumber', req.__('終了時日は整数にしてください。')).isAlphanumeric();
 
-    const validationResult = await req.getValidationResult();
-    if (validationResult.isEmpty()) return next();
+        let validationResult = await req.getValidationResult();
+        if (validationResult.isEmpty()) return next();
 
-    res.validationErrors(validationResult.array());
-  } catch (error) {
-    res.serverError({}, error);
-  }
+        res.validationErrors(validationResult.array());
+    } catch (error) {
+        res.serverError({}, error);
+    }
 };

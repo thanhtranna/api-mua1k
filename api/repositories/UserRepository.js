@@ -1,5 +1,7 @@
 "use strict";
 
+const moment = require("moment");
+
 module.exports = {
 
     /**
@@ -10,19 +12,24 @@ module.exports = {
      */
 
     getProfile: (_id) => {
-        let fieldSelect = "id uid nickname avatar email coin";
+        let fieldSelect = "id uid nickname avatar email coin deviceToken";
         return User.findOne({_id}, fieldSelect).lean(true);
     },
 
     isCheckin: async (user) => {
+        let isCheckin = false;
         let checkin = await LogUserTask.findOne({user, task:1}).lean(true);
         if(!checkin) {
             return false;
         }
-        let updatedAt = new Date(checkin.updatedAt).getTime();
-        let nows = new Date().getTime();
-        let diff = (nows - updatedAt)/24/60/60/1000;
-        return diff < 1;
+        let expiredAt = moment(checkin.updatedAt);
+        let numberExpiredAt = expiredAt.format('YYYYMMDD');
+        let currentDate = moment(new Date());
+        let numberCurrentDate = currentDate.format('YYYYMMDD');
+        if (numberExpiredAt === numberCurrentDate) {
+            isCheckin = true;
+        }
+        return isCheckin;
 
     },
 
@@ -108,6 +115,61 @@ module.exports = {
         let users = await User.paginate(query, option);
         return users;
     },
+    /**
+     * Function filter user.
+     * @param {String} type
+     * @param {Number} page
+     * @returns {Promise.<*|Promise>}
+     */
+    filterUsersAdmin: async (type, page = 1) => {
+        let query = {};
+        switch (type) {
+            case `${sails.config.user.normal}`:
+                query ={
+                    isBlocked:false,
+                    deletedAt: {$eq: undefined}
+                };
+                break;
+            case `${sails.config.user.all}`:
+                break;
+            case `${sails.config.user.blocked}`:
+                query = {
+                    isBlocked: true,
+                };
+                break;
+            case `${sails.config.user.deleted}`:
+                query = {
+                    deletedAt: {$ne: undefined}
+                };
+                break;
+        }
+        let option = sails.helpers.optionPaginateUser(page);
+        let users = await User.paginate(query, option);
+        return users;
+    },
+
+    /**
+     * Function search user.
+     * @param {String} value
+     * @param {Number} page
+     * @returns {Promise.<*|Promise>}
+     */
+
+    searchUsersAdmin: async (value, page = 1) => {
+        let query = {};
+        if ( typeof value !== 'undefined') {
+            query = {
+                $or: [
+                    {email: new RegExp(value)},
+                    {nickname: new RegExp(value)}
+                ]
+            };
+        }
+        let option = sails.helpers.optionPaginateUser(page);
+        let users = await User.paginate(query, option);
+        return users;
+    },
+
 
     /**
      * Function changeNickname
@@ -119,7 +181,7 @@ module.exports = {
 
     changeNickname: async(nickname, id) => {
         await User.update({_id:id}, {nickname});
-        let fieldUser = "id nickname email avatar";
+        let fieldUser = "id uid nickname email avatar";
         return await User.findOne({_id:id}).select(fieldUser);
     },
 
@@ -132,4 +194,28 @@ module.exports = {
         let userCoin = await UserPoint.findOne({user: id}).lean(true);
         return userCoin ? userCoin.point : 0;
     },
+
+    /**
+     * Get number Date consecutive checkin
+     * @param id: user id
+     */
+    getNumberDateCheckin: async (user) => {
+        let checkin = await LogUserTask.findOne({user, task:1}).lean(true);
+        if (!checkin) {
+            let notCheckin = 0;
+            return notCheckin;
+        }
+        return checkin.value;
+    },
+
+    /**
+     * Delete device token
+     */
+    deleteDeviceToken: async (id) => {
+        try {
+            return await User.findByIdAndUpdate({_id: id}, {$set: {deviceToken: null}}, {new: true});
+        } catch (error) {
+            throw error;
+        }
+    }
 };

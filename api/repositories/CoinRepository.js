@@ -31,12 +31,13 @@ module.exports = {
      */
 
     coinExchange: async (user, point) => {
-        if(point % sails.config.coinExchangeRatio === 0) {
+        if(point / sails.config.coinExchangeRatio >= 1) {
             let userPoint = await UserPoint.findOne({user});
+            console.log(userPoint);
 
             // Check point for exchange
             if(!userPoint) {
-                await UserPoint.create({
+                userPoint = await UserPoint.create({
                     user,
                     point: 0
                 });
@@ -47,20 +48,10 @@ module.exports = {
             }
 
             // Save new point and new coin
+            let coin = parseInt(point / sails.config.coinExchangeRatio);
+            let newPoint = userPoint.point - (sails.config.coinExchangeRatio*coin);
 
-            let newPoint = userPoint.point - point;
-            let coin = point / sails.config.coinExchangeRatio;
             await UserPoint.update({user}, {$set:{point:newPoint}}, {new:true});
-            let userCoin = await UserCoin.findOne({user});
-            if(!userCoin) {
-                await UserCoin.create({
-                    user,
-                    coin
-                });
-            } else {
-                let newCoin = userCoin.coin + coin;
-                await UserCoin.update({user}, {coin:newCoin}, {new:true});
-            }
 
             // Random code
             let code = faker.random.alphaNumeric(10);
@@ -75,10 +66,16 @@ module.exports = {
                 coin,
                 status: 1,
                 code
-
             };
             // Save log
-            await LogUserCoinExchange.create(dataLog);
+            let logUserCoinExchange = await LogUserCoinExchange.create(dataLog);
+
+            // Add coin for user on BAP Platform
+            let data = await AuctionRepository.postAddAmount(user, coin);
+
+            if (data.status && data.status !== 200) {
+                await LogUserCoinExchange.findByIdAndUpdate({_id: logUserCoinExchange._id}, {status: 0}, {new: true});
+            }
             return true;
         }
         return sails.errors.pointIsInvalid;
@@ -93,6 +90,6 @@ module.exports = {
 
     coinExchangeHistory: async(user) => {
         let fieldSelect = "id coin createdAt status";
-        return await LogUserCoinExchange.find({user}).select(fieldSelect);
+        return await LogUserCoinExchange.find({user}).select(fieldSelect).sort({createdAt: -1});
     },
 }

@@ -2,15 +2,57 @@
 
 const ProductRepository = {
 
-    findByCategory: async (categoryId, selectFields = 'id name images') => {
+    findByCategory: async (categoryId, selectFields = 'id name images category') => {
         try {
-            return await Product
+            if(sails.helpers.isMongoId(categoryId)) {
+                let category = await Category.findOne({_id:sails.helpers.toObjectId(categoryId)});
+                if(category) {
+                    sails.log(await Product
+                        .find({
+                            "category.*": categoryId,
+                            deletedAt: {$exists: false}
+                        })
+                        .select(selectFields)
+                        .lean());
+                    return await Product
+                        .find({
+                            category: sails.helpers.toObjectId(categoryId),
+                            deletedAt: {$exists: false}
+                        })
+                        .select(selectFields)
+                        .lean();
+                } else {
+                    return await Product
+                        .find({
+                            deletedAt: {$exists: false}
+                        })
+                        .select(selectFields)
+                        .lean();
+                }
+
+            } else {
+                return await Product
+                    .find({
+                        deletedAt: {$exists: false}
+                    })
+                    .select(selectFields)
+                    .lean();
+            }
+
+        } catch (error) {
+            throw error;
+        }
+    },
+
+    findByCategories: async (selectFields = 'id name images') => {
+        try {
+            let products = await Product
                 .find({
-                    category: categoryId,
                     deletedAt: {$exists: false}
                 })
                 .select(selectFields)
                 .lean();
+            return products;
         } catch (error) {
             throw error;
         }
@@ -22,7 +64,7 @@ const ProductRepository = {
      * @param selectFields
      * @return {array}
      */
-    getArrayIdByCategory: async (categoryId, selectFields = 'id') => {
+    getArrayIdByCategory: async (categoryId, selectFields = 'id name description') => {
         try {
             let products = await ProductRepository.findByCategory(categoryId, selectFields);
             return sails.helpers.arrayObjectToArrayValue(products);
@@ -41,42 +83,17 @@ const ProductRepository = {
         }
     },
 
-    /**
-     * Find product by keyword
-     * @param keyword
-     * @return {Promise.<{}>}
-     */
-    findByKeyword: async (keyword) => {
+
+
+    getArrayIdByCategories: async (selectFields = '_id') => {
         try {
-            return await Product
-                .find({ name: new RegExp(keyword, 'i') })
-                .select('_id name');
-        }
-        catch (error) {
+            let products = await ProductRepository.findByCategories(selectFields);
+            let data = sails.helpers.arrayObjectToArrayValue(products);
+            return data;
+        } catch (error) {
             throw error;
         }
-    },
-
-    /**
-     * Get all product by keyword and return array id
-     * @param {string} keyword
-     * @return {Promise.<>}
-     */
-    getArrayIdByKeyword: async (keyword) => {
-        try {
-            let products = await ProductRepository.findByKeyword(keyword);
-            // TODO: debug why can't use helper
-            let arrayId = [];
-            products.forEach(product => {
-                arrayId.push(product._id)
-            });
-            return arrayId;
-        }
-        catch (error) {
-            throw error;
-        }
-    },
-
+    }
 };
 
 module.exports = ProductRepository;

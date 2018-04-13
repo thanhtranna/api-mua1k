@@ -119,23 +119,61 @@ module.exports.bootstrap = async function(cb) {
       ));
     }
 
+    /** Remove all old redis key related number b */
+    for (let hour = 0; hour <= 24; hour++) {
+      const result = await RedisService.delete(`numB-time-${hour}`);
+      sails.log.info('hour: ', hour);
+      sails.log.debug('result: ', result);
+    }
+
     /**
      * If server restart, all cron tasks will lost,
      * so we need to check and run the tasks not complete
      * this case only used on production environment
      */
-    // if (sails.config.environment === 'production') {
-    //   let auctionsNotComplete = await Auction.find({
-    //     status: Auction.status.running,
-    //     finishAt: { $gt: moment().format() }
-    //   }).select('chanceNumber finishAt');
-    //   auctionsNotComplete.forEach(auction => {
-    //     AuctionService.finishAuctionJob(auction.finishAt, {
-    //       auctionId: auction.id,
-    //       chanceNumber: auction.chanceNumber
-    //     });
-    //   });
-    // }
+    if (sails.config.environment !== 'development') {
+      let auctionsNotComplete = await Auction.find({
+        status: Auction.status.running,
+        expiredAt: { $gt: moment().format() }
+      }).select('chanceNumber finishAt');
+
+      auctionsNotComplete.forEach(auction => {
+        let data = {
+          auctionId: auction.id,
+          chanceNumber: auction.chanceNumber
+        };
+        let current = moment(),
+          finishAt = moment(auction.finishAt);
+
+        // run find lucky number immediately if current time > auction.finishAt
+        if (current > finishAt)
+          return AuctionService.findLuckyNumber(auction.finishAt, data);
+        // else - re create job for this auction
+        AuctionService.finishAuctionJob(auction.finishAt, data);
+      });
+    }
+
+    /**
+     * Run cron job find failed auctions and re run find lucky number for these auctions
+     */
+    AuctionService.cronFindAndStoreNumberBToRedis();
+
+    /**
+     * Run cron job find failed add and subtract coin on BAP Platform
+     */
+    TransactionService.cronFindAndSendAddCoinPlatform();
+    TransactionService.cronFindAndSendSubtractCoinPlatform();
+    TransactionService.cronFindAndReturnCoinPlatform();
+
+    /**
+     * Run cron job find auctions expired and not sold out to return coin for user
+     */
+    AuctionService.cronFindAndReturnCoin();
+
+    /**
+     * Create default a admin
+     */
+    AdminService.defaultAdmin();
 
     // Required from Sails
     // It's very important to trigger this callback method when you are finished

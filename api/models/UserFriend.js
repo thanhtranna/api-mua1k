@@ -23,8 +23,21 @@ const UserFriendSchema = mongoose.Schema({
         }
     ],
     totalFriend: {
-        type: Number
-    }
+        type: Number,
+        default: 0
+    },
+    totalBestFriend: {
+        type: Number,
+        default: 0
+    },
+    totalGoodFriend: {
+        type: Number,
+        default: 0
+    },
+    totalNormalFriend: {
+        type: Number,
+        default: 0
+    },
 }, {
     timestamps:true
 });

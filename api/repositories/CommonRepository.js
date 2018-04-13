@@ -31,9 +31,7 @@ module.exports = {
 
     create: async (params) => {
         try {
-            let fieldContact = "_id email content";
             let contact = await Contact.create(params);
-            contact = await Contact.findById(contact._id).select(fieldContact);
             return contact;
         } catch(error) {
             throw error;

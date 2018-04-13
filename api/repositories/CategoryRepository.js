@@ -19,7 +19,7 @@ module.exports = {
         return Category
             .find({deletedAt: {$exists: false}})
             .select('name icon')
-            .sort({createdAt: -1});
+            .sort({createdAt: 1});
     },
 
     /**

@@ -2,7 +2,7 @@
  * Created by daulq on 9/25/17.
  */
 
-const fieldUser = "_id nickname email avatar";
+const fieldUser = "_id nickname email avatar uid";
 const fieldMessage = "-updatedAt -__v";
 
 module.exports = {
@@ -40,12 +40,14 @@ module.exports = {
     /**
      * Function getMessages.
      * @description get all messages.
-     * @param {Number} page
+     * @param timestamp
      * @returns {Promise.<*|Promise>}
      */
 
-    getMessages: async(page) => {
+    getMessages: async(timestamp) => {
         try {
+            let userBlockIds = await User.find({isBlocked: true}).select('_id');
+            let arrayUserBlockIds = sails.helpers.transferToArrayValue(userBlockIds);
             let options = {
                 select: fieldMessage,
                 populate: [
@@ -55,13 +57,15 @@ module.exports = {
                     }
                 ],
                 lean: true,
-                page: page,
-                limit: sails.config.paginateLimit,
+                limit: 20,
                 sort: {
                     "createdAt": -1
                 }
             };
-            let messages = await MessageChat.paginate({}, options);
+            let messages = await MessageChat.paginate({
+                user: { $nin: arrayUserBlockIds },
+                createdAt: {$lt: timestamp}
+            }, options);
             messages = messages.docs;
             await messages.sort((a,b) => {
                 return a.createdAt - b.createdAt;
