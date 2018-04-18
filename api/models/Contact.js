@@ -7,20 +7,22 @@
 
 const mongoosePaginate = require('mongoose-paginate');
 
-const ContactSchema = mongoose.Schema({
+const ContactSchema = mongoose.Schema(
+  {
     category: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "ContactCategory"
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'ContactCategory'
     },
     email: { type: String },
     content: { type: String },
     deletedAt: { type: Date },
     isHandle: { type: Boolean, default: false }
-}, {
+  },
+  {
     timestamps: true
-});
+  }
+);
 
 ContactSchema.plugin(mongoosePaginate);
 
-module.exports = mongoose.model("Contact", ContactSchema);
-
+module.exports = mongoose.model('Contact', ContactSchema);

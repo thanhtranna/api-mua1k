@@ -6,15 +6,13 @@
  */
 
 module.exports = {
+  /**
+   * Function topInviteList
+   * @description Get top invite friend.
+   */
 
-    /**
-     * Function topInviteList
-     * @description Get top invite friend.
-     */
-
-    topInviteList: asyncWrap(async(req, res) => {
-        let users = await FriendRepository.topInviteList();
-        return res.ok({data: users});
-    })
+  topInviteList: asyncWrap(async (req, res) => {
+    let users = await FriendRepository.topInviteList();
+    return res.ok({ data: users });
+  })
 };
-

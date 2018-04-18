@@ -5,25 +5,30 @@
  * @docs        :: http://sailsjs.org/documentation/concepts/models-and-orm/models
  */
 
-const mongoose = require("mongoose");
+const mongoose = require('mongoose');
 const mongoosePaginate = require('mongoose-paginate');
 
-const UserFavoriteProductSchema = mongoose.Schema({
+const UserFavoriteProductSchema = mongoose.Schema(
+  {
     user: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "User"
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
     },
     name: {
-        type:String
+      type: String
     },
     url: {
-        type: String
+      type: String
     }
-}, {
+  },
+  {
     timestamps: true
-});
+  }
+);
 
 UserFavoriteProductSchema.plugin(mongoosePaginate);
 
-module.exports = mongoose.model("UserFavoriteProduct", UserFavoriteProductSchema);
-
+module.exports = mongoose.model(
+  'UserFavoriteProduct',
+  UserFavoriteProductSchema
+);

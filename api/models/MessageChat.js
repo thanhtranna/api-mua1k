@@ -5,24 +5,26 @@
  * @docs        :: http://sailsjs.org/documentation/concepts/models-and-orm/models
  */
 
-const mongoosePagination = require("mongoose-paginate");
+const mongoosePagination = require('mongoose-paginate');
 
-const MessageChatSchema = mongoose.Schema({
+const MessageChatSchema = mongoose.Schema(
+  {
     user: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
     },
     message: {
-        type: String,
+      type: String
     },
     type: {
-        type: Number,
-        default: 1
+      type: Number,
+      default: 1
     }
-}, {
+  },
+  {
     timestamps: true
-});
+  }
+);
 
 MessageChatSchema.plugin(mongoosePagination);
-module.exports = mongoose.model("MessageChat", MessageChatSchema);
-
+module.exports = mongoose.model('MessageChat', MessageChatSchema);

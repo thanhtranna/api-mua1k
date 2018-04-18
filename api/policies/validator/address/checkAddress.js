@@ -3,14 +3,14 @@
  */
 
 module.exports = asyncWrap(async (req, res, next) => {
-    let id = req.params.id;
-    let isObject = sails.helpers.isMongoId(id);
-    if(isObject) {
-        let checkAddress = await UserAddress.count({_id:id});
+  const { id } = req.params;
+  const isObject = sails.helpers.isMongoId(id);
+  if (isObject) {
+    const checkAddress = await UserAddress.count({ _id: id });
 
-        if(checkAddress) {
-            return next();
-        }
+    if (checkAddress) {
+      return next();
     }
-    return res.badRequest(sails.errors.addressNotExist);
+  }
+  return res.badRequest(sails.errors.addressNotExist);
 });

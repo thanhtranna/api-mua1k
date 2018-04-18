@@ -5,18 +5,20 @@
  * @docs        :: http://sailsjs.org/documentation/concepts/models-and-orm/models
  */
 
-const mongoose = require("mongoose");
-const UserCoinSchema = mongoose.Schema({
+const mongoose = require('mongoose');
+const UserCoinSchema = mongoose.Schema(
+  {
     user: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "User"
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
     },
     coin: {
-        type: Number,
-        default: 0
+      type: Number,
+      default: 0
     }
-}, {
+  },
+  {
     timestamps: true
-});
-module.exports = mongoose.model("UserCoin", UserCoinSchema);
-
+  }
+);
+module.exports = mongoose.model('UserCoin', UserCoinSchema);

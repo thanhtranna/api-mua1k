@@ -6,9 +6,6 @@
  */
 
 module.exports = {
-	
-
-
   /**
    * Function index
    * @description Get coin charge
@@ -16,8 +13,7 @@ module.exports = {
    *
    */
   index: asyncWrap(async (req, res) => {
-      let coinCharge = sails.helpers.coinCharge();
-      return res.ok({data:coinCharge});
+    let coinCharge = sails.helpers.coinCharge();
+    return res.ok({ data: coinCharge });
   })
 };
-

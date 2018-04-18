@@ -38,6 +38,7 @@ module.exports = {
     }
     return new Promise((resolve, reject) => {
       req.file(inputName).upload(config, async function(err, filesUploaded) {
+        console.log(_.isEmpty(filesUploaded));
         if (err || _.isEmpty(filesUploaded)) {
           reject(inputName + ' is required');
         } else {

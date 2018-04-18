@@ -5,19 +5,22 @@
  * @docs        :: http://sailsjs.org/documentation/concepts/models-and-orm/models
  */
 
-const LogUserTaskSchema = mongoose.Schema({
+const LogUserTaskSchema = mongoose.Schema(
+  {
     user: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "User"
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
     },
     value: {
-        type: Number
+      type: Number
     },
     task: {
-        type: Number
+      type: Number
     }
-}, {
+  },
+  {
     timestamps: true
-});
+  }
+);
 
-module.exports = mongoose.model("LogUserTask", LogUserTaskSchema);
+module.exports = mongoose.model('LogUserTask', LogUserTaskSchema);

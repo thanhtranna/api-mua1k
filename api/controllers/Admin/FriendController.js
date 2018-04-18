@@ -6,11 +6,9 @@
  */
 
 module.exports = {
-
-    getFriendByUser: asyncWrap(async(req, res) => {
-        let userid = req.params.userid;
-        let users = await FriendRepository.getFriendByUser(userid);
-        return res.ok({data: users});
-    })
+  getFriendByUser: asyncWrap(async (req, res) => {
+    const { userid } = req.params;
+    const users = await FriendRepository.getFriendByUser(userid);
+    return res.ok({ data: users });
+  })
 };
-

@@ -6,32 +6,35 @@
  */
 
 module.exports = {
+  /**
+   * Function discountTicketByUser.
+   * @description Get list discount ticket of user
+   * @policies
+   *   verifyToken
+   */
 
-    /**
-     * Function discountTicketByUser.
-     * @description Get list discount ticket of user
-     * @policies
-     *   verifyToken
-     */
+  discountTicketByUser: asyncWrap(async (req, res) => {
+    const user = req.params.userid;
+    const page = req.query.page || 1;
+    let selectFields = '-__v';
+    const populate = [
+      {
+        path: 'user',
+        select: 'nickname'
+      },
+      {
+        path: 'product',
+        select: 'name'
+      }
+    ];
 
-    discountTicketByUser: asyncWrap(async (req, res) => {
-        let user = req.params.userid;
-        let page = req.query.page || 1;
-        let selectFields = '-__v';
-        let populate = [{
-                path: 'user',
-                select: 'nickname'
-            },
-            {
-                path: 'product',
-                select: 'name'
-        }];
-
-        let option = sails.helpers.optionPaginate(page, selectFields, populate);
-        let discountTickets = await UserDiscountTicket.paginate({
-            user: user
-        }, option);
-        return res.ok({data:discountTickets});
-    })
+    const option = sails.helpers.optionPaginate(page, selectFields, populate);
+    const discountTickets = await UserDiscountTicket.paginate(
+      {
+        user: user
+      },
+      option
+    );
+    return res.ok({ data: discountTickets });
+  })
 };
-

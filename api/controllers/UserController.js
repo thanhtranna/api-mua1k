@@ -3,505 +3,512 @@
  * Server-side logic for management Users
  */
 
-"use strict";
-const fieldUser = "id nickname email avatar";
+'use strict';
+const fieldUser = 'id nickname email avatar';
 
 module.exports = {
+  /**
+   * Function getUserProfile
+   * @description Get profile other profile.
+   * @Route: params:
+   *   {ObjectId()} userid id of user
+   */
 
-    /**
-     * Function getUserProfile
-     * @description Get profile other profile.
-     * @Route: params:
-     *   {ObjectId()} userid id of user
-     */
+  getUserProfile: asyncWrap(async (req, res) => {
+    let id = req.params.userid;
+    let user = await UserRepository.getProfile(id);
+    if (user) {
+      res.ok({ data: user });
+    } else {
+      res.badRequest({ message: req.__('user_not_exist'), error: 6 });
+    }
+  }),
 
-    getUserProfile : asyncWrap(async (req, res) => {
-        let id = req.params.userid;
-        let user = await UserRepository.getProfile(id);
-        if(user) {
-            res.ok({data:user});
-        } else {
-            res.badRequest({message: req.__("user_not_exist"), error:6 })
-        }
+  /**
+   * Function getMyProfile
+   * @description Get my profile.
+   */
 
-    }),
+  getMyProfile: asyncWrap(async (req, res) => {
+    let user = req.user;
+    user = await UserRepository.getProfile(user._id);
+    user.coin = await AuctionRepository.getDepositBalanceByUser(user._id);
+    user.point = await UserRepository.getPoint(user._id);
+    user.isCheckin = await UserRepository.isCheckin(user._id);
+    user.valueCheckin = await UserRepository.getNumberDateCheckin(user._id);
+    if (user) {
+      res.ok({ data: user });
+    } else {
+      res.badRequest({ message: req.__('user_not_exist'), error: 6 });
+    }
+  }),
+  /**
+   * Function getHistoryChanceBuy
+   * @description Get history user chance buy.
+   * @Query params:
+   *   {number} page: page number in pagination
+   * @Route params:
+   *   {objectId()} id: id of user
+   * @Polices
+   *   /validator/user/userExist
+   * @Return {Array json}
+   *
+   */
 
-    /**
-     * Function getMyProfile
-     * @description Get my profile.
-     */
+  getHistoryChanceBuy: asyncWrap(async (req, res) => {
+    let id = req.params.id;
+    let page = req.query.page !== undefined ? req.query.page : 1;
+    let userAuctionBuy = await AuctionRepository.auctionHistoryByUser(id, page);
+    res.ok({ data: userAuctionBuy });
+  }),
 
-    getMyProfile: asyncWrap(async (req, res) => {
-        let user = req.user;
-        user = await UserRepository.getProfile(user._id);
-        user.coin = await AuctionRepository.getDepositBalanceByUser(user._id);
-        user.point = await UserRepository.getPoint(user._id);
-        user.isCheckin = await UserRepository.isCheckin(user._id);
-        user.valueCheckin = await UserRepository.getNumberDateCheckin(user._id);
-        if(user) {
-            res.ok({data:user});
-        } else {
-            res.badRequest({message: req.__("user_not_exist"), error:6 })
-        }
-    }),
-    /**
-     * Function getHistoryChanceBuy
-     * @description Get history user chance buy.
-     * @Query params:
-     *   {number} page: page number in pagination
-     * @Route params:
-     *   {objectId()} id: id of user
-     * @Polices
-     *   /validator/user/userExist
-     * @Return {Array json}
-     *
-     */
+  /**
+   * Function auctionHistoryById
+   * @description Get detail history chance buy.
+   * @Route params:
+   *   {objectId()} id: id of user
+   *   {objectId()} auctionid: id of auction
+   * @Polices
+   *   /validator/user/userExist
+   *   /validator/user/auctionExist
+   * @Return {Array json}
+   */
 
-    getHistoryChanceBuy: asyncWrap(async (req, res) => {
-        let id = req.params.id;
-        let page = req.query.page !== undefined ? req.query.page : 1;
-        let userAuctionBuy = await AuctionRepository.auctionHistoryByUser(id, page);
-        res.ok({data: userAuctionBuy});
-    }),
+  auctionHistoryById: asyncWrap(async (req, res) => {
+    let auction = req.params.auctionid;
+    let user = req.params.id;
+    let userChanceBuys = await AuctionRepository.auctionByUser(auction, user);
+    res.ok({ data: userChanceBuys });
+  }),
 
-    /**
-     * Function auctionHistoryById
-     * @description Get detail history chance buy.
-     * @Route params:
-     *   {objectId()} id: id of user
-     *   {objectId()} auctionid: id of auction
-     * @Polices
-     *   /validator/user/userExist
-     *   /validator/user/auctionExist
-     * @Return {Array json}
-     */
+  /**
+   * Function winAuctionHistory
+   * @description get history win auction of user.
+   * @Route params:
+   *   {ObjectId()} id: id of user
+   * @Polices
+   *   /validator/user/userExist
+   */
 
-    auctionHistoryById: asyncWrap(async (req, res) => {
-        let auction = req.params.auctionid;
-        let user = req.params.id;
-        let userChanceBuys = await AuctionRepository.auctionByUser(auction, user);
-        res.ok({data:userChanceBuys});
-    }),
+  winAuctionHistory: asyncWrap(async (req, res) => {
+    let id = req.params.id;
+    let page = req.query.page !== undefined ? req.query.page : 1;
+    let auctionWinners = await AuctionRepository.winAuctionHistoryByUser(
+      id,
+      page
+    );
+    res.ok({ data: auctionWinners });
+  }),
 
-    /**
-     * Function winAuctionHistory
-     * @description get history win auction of user.
-     * @Route params:
-     *   {ObjectId()} id: id of user
-     * @Polices
-     *   /validator/user/userExist
-     */
+  /**
+   * Function reviewList
+   * @description Get list review of user.
+   * @Route params:
+   *   {ObjectId()} id id of user
+   * @Query params:
+   *   {Number} page page of user
+   * @Polices
+   *   /validator/user/userExist
+   */
 
-    winAuctionHistory:  asyncWrap(async (req, res) => {
-        let id = req.params.id;
-        let page = req.query.page !== undefined ? req.query.page : 1;
-        let auctionWinners = await AuctionRepository.winAuctionHistoryByUser(id, page);
-        res.ok({data:auctionWinners});
-    }),
+  reviewList: asyncWrap(async (req, res) => {
+    let userId = req.params.id;
+    let page = req.query.page ? req.query.page : 1;
+    let me = req.user ? req.user._id : null;
+    let reviews = await ReviewRepository.reviewByUser(userId, me, page);
+    return res.ok({ data: reviews });
+  }),
 
-    /**
-     * Function reviewList
-     * @description Get list review of user.
-     * @Route params:
-     *   {ObjectId()} id id of user
-     * @Query params:
-     *   {Number} page page of user
-     * @Polices
-     *   /validator/user/userExist
-     */
+  /**
+   * Function changeAvatar
+   * @description Upload new avatar.
+   * @body params:
+   *   {file} avatar new avatar
+   * @policies
+   *   verifyToken
+   */
 
-    reviewList: asyncWrap(async (req, res) => {
-        let userId = req.params.id;
-        let page = req.query.page ? req.query.page : 1;
-        let me = req.user ? req.user._id : null;
-        let reviews = await ReviewRepository.reviewByUser(userId,me, page);
-        return res.ok({data: reviews});
-    }),
+  changeAvatar: asyncWrap(async (req, res) => {
+    let options = {
+      req,
+      inputName: 'avatar'
+    };
+    let avatar = await UploadService.upload(options);
+    let _id = req.user._id;
+    await User.update({ _id }, { $set: { avatar: avatar[0] } });
+    let user = await User.findOne({ _id }).select(fieldUser);
+    res.ok({ data: user });
+  }),
 
-    /**
-     * Function changeAvatar
-     * @description Upload new avatar.
-     * @body params:
-     *   {file} avatar new avatar
-     * @policies
-     *   verifyToken
-     */
+  image: asyncWrap(async (req, res) => {
+    let path = req.path.split('/api/v1/image')[1];
+    sails.log(process.cwd() + '/.tmp' + path);
+    res.sendfile(process.cwd() + '/.tmp' + path);
+  }),
 
-    changeAvatar: asyncWrap(async (req, res) => {
-        let options = {
-            req,
-            inputName: "avatar"
-        };
-        let avatar = await UploadService.upload(options);
-        let _id = req.user._id;
-        await User.update({_id}, {$set: {avatar: avatar[0]}});
-        let user = await User.findOne({_id}).select(fieldUser);
-        res.ok({data:user});
-    }),
+  /**
+   * Function changeNickname
+   * @description Change new nickname.
+   * @body params:
+   *   {String} nickname new nickname
+   * @policies
+   *   verifyToken
+   *   validator/user/changeNickname
+   */
 
-    image: asyncWrap(async (req, res) => {
-        let path = req.path.split("/api/v1/image")[1];
-        sails.log(process.cwd()+'/.tmp'+path);
-        res.sendfile(process.cwd()+'/.tmp'+path);
-    }),
+  changeNickname: asyncWrap(async (req, res) => {
+    let nickname = req.body.nickname;
+    let id = req.user._id;
+    let user = await UserRepository.changeNickname(nickname, id);
+    return res.ok({ data: user });
+  }),
 
-    /**
-     * Function changeNickname
-     * @description Change new nickname.
-     * @body params:
-     *   {String} nickname new nickname
-     * @policies
-     *   verifyToken
-     *   validator/user/changeNickname
-     */
+  /**
+   * Function addressList.
+   * @description Get all list address of user.
+   * @policies
+   *   verifyToken
+   */
 
-    changeNickname: asyncWrap(async (req, res) => {
-        let nickname = req.body.nickname;
-        let id = req.user._id;
-        let user = await UserRepository.changeNickname(nickname, id);
-        return res.ok({data:user});
-    }),
+  addressList: asyncWrap(async (req, res) => {
+    let id = req.user._id;
+    let address = await AddressRepository.listByUser(id);
+    return res.ok({ data: address });
+  }),
 
-    /**
-     * Function addressList.
-     * @description Get all list address of user.
-     * @policies
-     *   verifyToken
-     */
+  /**
+   * Function searchAddressByPostCode.
+   * @description Search address via postcode.
+   * @query Params
+   *   {Number} postcode Postcode using search
+   * @policies
+   *   /validator/user/checkPostcode
+   */
 
-    addressList: asyncWrap(async (req, res) => {
-        let id = req.user._id;
-        let address = await AddressRepository.listByUser(id);
-        return res.ok({data:address});
-    }),
+  searchAddressByPostCode: asyncWrap(async (req, res) => {
+    let postcode = parseInt(req.query.postcode);
+    let address = await AddressRepository.searchByPostCode(postcode);
+    return res.ok({ data: address });
+  }),
 
-    /**
-     * Function searchAddressByPostCode.
-     * @description Search address via postcode.
-     * @query Params
-     *   {Number} postcode Postcode using search
-     * @policies
-     *   /validator/user/checkPostcode
-     */
+  /**
+   * Function createAddress.
+   * @description Create new address.
+   * @body Params:
+   *   {String} fullname Fullname of user
+   *   {String} phone phone of user
+   *   {String} address address of user
+   *   {Number} postcode postcode
+   *   {String} province province
+   *   {String} district district
+   *   {String} town town
+   *   {String} note note
+   *   {Boolean} isDefault Set address is default
+   * @policies
+   *   verifyToken
+   *   /validator/address/createAddress
+   */
 
-    searchAddressByPostCode: asyncWrap(async (req, res) => {
-        let postcode = parseInt(req.query.postcode);
-        let address = await AddressRepository.searchByPostCode(postcode);
-        return res.ok({data:address});
-    }),
+  createAddress: asyncWrap(async (req, res) => {
+    let body = { ...req.body };
+    body['user'] = req.user._id;
+    let address = await AddressRepository.create(body);
+    res.ok({ data: address });
+  }),
 
-    /**
-     * Function createAddress.
-     * @description Create new address.
-     * @body Params:
-     *   {String} fullname Fullname of user
-     *   {String} phone phone of user
-     *   {String} address address of user
-     *   {Number} postcode postcode
-     *   {String} province province
-     *   {String} district district
-     *   {String} town town
-     *   {String} note note
-     *   {Boolean} isDefault Set address is default
-     * @policies
-     *   verifyToken
-     *   /validator/address/createAddress
-     */
+  /**
+   * Function editAddress.
+   * @description Edit address.
+   * @Route params:
+   *   {ObjectId()} id Id of address
+   * @body params:
+   *   {String} fullname Fullname of user
+   *   {String} phone phone of user
+   *   {String} address address of user
+   *   {Number} postcode postcode
+   *   {String} province province
+   *   {String} district district
+   *   {String} town town
+   *   {String} note note
+   *   {Boolean} isDefault Set address is default
+   * @policies
+   *   verifyToken
+   *   /validator/address/createAddress
+   *   /validator/address/checkAddress
+   */
 
-    createAddress: asyncWrap(async (req, res) => {
-        let body = {...req.body};
-        body["user"] = req.user._id;
-        let address = await AddressRepository.create(body);
-        res.ok({data:address});
-    }),
+  editAddress: asyncWrap(async (req, res) => {
+    let id = req.params.id;
+    let user = req.user._id;
+    let body = { ...req.body };
+    let address = await AddressRepository.edit(body, id, user);
+    if (address === false) {
+      return res.badRequest(sails.errors.addressNotExist);
+    }
+    return res.ok({ data: address });
+  }),
 
-    /**
-     * Function editAddress.
-     * @description Edit address.
-     * @Route params:
-     *   {ObjectId()} id Id of address
-     * @body params:
-     *   {String} fullname Fullname of user
-     *   {String} phone phone of user
-     *   {String} address address of user
-     *   {Number} postcode postcode
-     *   {String} province province
-     *   {String} district district
-     *   {String} town town
-     *   {String} note note
-     *   {Boolean} isDefault Set address is default
-     * @policies
-     *   verifyToken
-     *   /validator/address/createAddress
-     *   /validator/address/checkAddress
-     */
+  /**
+   * Function deleteAddress.
+   * @description Delete address.
+   * @Route params:
+   *   {ObjectId()} id Id of address
+   * @body params:
+   *   {String} fullname Fullname of user
+   *   {String} phone phone of user
+   *   {String} address address of user
+   *   {Number} postcode postcode
+   *   {String} province province
+   *   {String} district district
+   *   {String} town town
+   *   {String} note note
+   *   {Boolean} isDefault Set address is default
+   * @policies
+   *   verifyToken
+   *   /validator/address/checkAddress
+   */
 
-    editAddress: asyncWrap(async (req, res) => {
-        let id = req.params.id;
-        let user = req.user._id;
-        let body = {...req.body};
-        let address = await AddressRepository.edit(body, id, user);
-        if(address === false) {
-            return res.badRequest(sails.errors.addressNotExist);
-        }
-        return res.ok({data:address});
-    }),
+  deleteAddress: asyncWrap(async (req, res) => {
+    let id = req.params.id;
+    let user = req.user._id;
+    let address = await AddressRepository.delete(id, user);
+    if (address === false) {
+      return res.badRequest(sails.errors.addressNotExist);
+    }
+    return res.ok({ message: 'delete_address_success' });
+  }),
 
-    /**
-     * Function deleteAddress.
-     * @description Delete address.
-     * @Route params:
-     *   {ObjectId()} id Id of address
-     * @body params:
-     *   {String} fullname Fullname of user
-     *   {String} phone phone of user
-     *   {String} address address of user
-     *   {Number} postcode postcode
-     *   {String} province province
-     *   {String} district district
-     *   {String} town town
-     *   {String} note note
-     *   {Boolean} isDefault Set address is default
-     * @policies
-     *   verifyToken
-     *   /validator/address/checkAddress
-     */
+  /**
+   * Function getPointAndCoin.
+   * @description Get info point and coin.
+   * @policies
+   *   verifyToken
+   */
 
-    deleteAddress: asyncWrap(async (req, res) => {
-        let id = req.params.id;
-        let user = req.user._id;
-        let address = await AddressRepository.delete(id, user);
-        if(address === false) {
-            return res.badRequest(sails.errors.addressNotExist);
-        }
-        return res.ok({message: "delete_address_success"});
-    }),
+  getPointAndCoin: asyncWrap(async (req, res) => {
+    let user = req.user._id;
+    let coin = await AuctionRepository.getDepositBalanceByUser(user);
+    let point = await PointRepository.pointByUser(user);
+    let data = {
+      coin,
+      point
+    };
+    return res.ok({ data });
+  }),
 
-    /**
-     * Function getPointAndCoin.
-     * @description Get info point and coin.
-     * @policies
-     *   verifyToken
-     */
+  /**
+   * Function coinExchange
+   * @description Exchange point to coin.
+   * @body params:
+   *   {Number} point point exchange to coin
+   * @policies
+   *   verifyToken
+   *   /validator/point/checkPoint
+   */
 
-    getPointAndCoin: asyncWrap(async (req, res) => {
-        let user = req.user._id;
-        let coin = await AuctionRepository.getDepositBalanceByUser(user);
-        let point = await PointRepository.pointByUser(user);
-        let data = {
-            coin,
-            point
-        };
-        return res.ok({data});
-    }),
+  coinExchange: asyncWrap(async (req, res) => {
+    let user = req.user._id;
+    let point = req.body.point;
+    let result = await CoinRepository.coinExchange(user, point);
+    if (result === true) {
+      return res.ok();
+    } else {
+      return res.badRequest(result);
+    }
+  }),
 
-    /**
-     * Function coinExchange
-     * @description Exchange point to coin.
-     * @body params:
-     *   {Number} point point exchange to coin
-     * @policies
-     *   verifyToken
-     *   /validator/point/checkPoint
-     */
+  /**
+   * Function coinExchangeHistory
+   * @description History coin exchange
+   * @policies
+   *   verifyToken
+   */
 
-    coinExchange: asyncWrap(async (req, res) => {
-        let user = req.user._id;
-        let point = req.body.point;
-        let result = await CoinRepository.coinExchange(user, point);
-        if(result === true) {
-            return res.ok();
-        } else {
-            return res.badRequest(result);
-        }
-    }),
+  coinExchangeHistory: asyncWrap(async (req, res) => {
+    let user = req.user._id;
+    let history = await CoinRepository.coinExchangeHistory(user);
+    return res.ok({ data: history });
+  }),
 
-    /**
-     * Function coinExchangeHistory
-     * @description History coin exchange
-     * @policies
-     *   verifyToken
-     */
+  /**
+   * Function friendList
+   * @description Get friend list
+   * @policies
+   *   verifyToken
+   */
 
-    coinExchangeHistory: asyncWrap(async (req, res) => {
-        let user = req.user._id;
-        let history = await CoinRepository.coinExchangeHistory(user);
-        return res.ok({data:history});
-    }),
+  friendList: asyncWrap(
+    async (req, res) => {
+      let user = req.user._id;
+      let friends = await FriendRepository.friendListByUser(user);
+      return res.ok({ data: friends });
+    },
+    (req, res, error) => {
+      if (error.code === sails.errors.userWithoutAnyFriend.code)
+        return res.badRequest(sails.errors.userWithoutAnyFriend);
+      res.serverError(error);
+    }
+  ),
 
-    /**
-     * Function friendList
-     * @description Get friend list
-     * @policies
-     *   verifyToken
-     */
+  /**
+   * Function pointHistory.
+   * @description Get point history of user.
+   * @policies
+   *   verifyToken
+   */
 
-    friendList: asyncWrap(async (req, res) => {
-        let user = req.user._id;
-        let friends = await FriendRepository.friendListByUser(user);
-        return res.ok({data:friends});
-    }, (req, res, error) => {
-        if (error.code === sails.errors.userWithoutAnyFriend.code)
-            return res.badRequest(sails.errors.userWithoutAnyFriend);
-        res.serverError(error);
-    }),
+  pointHistory: asyncWrap(async (req, res) => {
+    let user = req.user._id;
+    let points = await PointRepository.pointHistoryByUser(user);
+    return res.ok({ data: points });
+  }),
 
-    /**
-     * Function pointHistory.
-     * @description Get point history of user.
-     * @policies
-     *   verifyToken
-     */
+  /**
+   * Function checkin.
+   * @description User checkin when login app.
+   * @policies
+   *   verifyToken
+   */
 
-    pointHistory: asyncWrap(async (req, res) => {
-        let user = req.user._id;
-        let points = await PointRepository.pointHistoryByUser(user);
-        return res.ok({data:points});
-    }),
+  checkin: asyncWrap(async (req, res) => {
+    let user = req.user._id;
+    let checkin = await PointRepository.checkin(user);
+    if (checkin === true) {
+      return res.ok();
+    } else {
+      return res.badRequest(sails.errors.checkinFail);
+    }
+  }),
 
-    /**
-     * Function checkin.
-     * @description User checkin when login app.
-     * @policies
-     *   verifyToken
-     */
+  /**
+   * Function auctionHistory.
+   * @description Get my auction chance buy history.
+   * @query params
+   *   {Number} page page in pagination
+   * @policies
+   *   verifyToken
+   *
+   */
 
-    checkin: asyncWrap( async (req, res) => {
-        let user = req.user._id;
-        let checkin = await PointRepository.checkin(user);
-        if(checkin === true) {
-            return res.ok();
-        } else {
-            return res.badRequest(sails.errors.checkinFail);
-        }
-    }),
+  auctionHistory: asyncWrap(async (req, res) => {
+    let id = req.user._id;
+    let page = req.query.page !== undefined ? req.query.page : 1;
+    let userAuctionBuy = await AuctionRepository.auctionHistoryByUser(id, page);
+    res.ok({ data: userAuctionBuy });
+  }),
 
-    /**
-     * Function auctionHistory.
-     * @description Get my auction chance buy history.
-     * @query params
-     *   {Number} page page in pagination
-     * @policies
-     *   verifyToken
-     *
-     */
+  /**
+   * Function myAuctionHistoryById.
+   * @description Get detail auction chance buy.
+   * @Route params
+   *   {ObjectId()} auctionid Id of auction
+   * @policies
+   *   verifyToken
+   */
 
-    auctionHistory: asyncWrap(async (req, res) => {
-        let id = req.user._id;
-        let page = req.query.page !== undefined ? req.query.page : 1;
-        let userAuctionBuy = await AuctionRepository.auctionHistoryByUser(id, page);
-        res.ok({data: userAuctionBuy});
-    }),
+  myAuctionHistoryById: asyncWrap(async (req, res) => {
+    let auction = req.params.auctionid;
+    let user = req.user._id;
+    let userChanceBuys = await AuctionRepository.auctionByUser(auction, user);
+    res.ok({ data: userChanceBuys });
+  }),
 
-    /**
-     * Function myAuctionHistoryById.
-     * @description Get detail auction chance buy.
-     * @Route params
-     *   {ObjectId()} auctionid Id of auction
-     * @policies
-     *   verifyToken
-     */
+  /**
+   * Function myWinAuctionHistory.
+   * @description Get my win auction history.
+   * @query params
+   *   {Number} page page in pagination
+   * @policies
+   *   verifyToken
+   */
 
-    myAuctionHistoryById: asyncWrap(async (req, res) => {
-        let auction = req.params.auctionid;
-        let user = req.user._id;
-        let userChanceBuys = await AuctionRepository.auctionByUser(auction, user);
-        res.ok({data:userChanceBuys});
-    }),
+  myWinAuctionHistory: asyncWrap(async (req, res) => {
+    let id = req.user._id;
+    let page = req.query.page !== undefined ? req.query.page : 1;
+    let auctionWinners = await AuctionRepository.winAuctionHistoryByUser(
+      id,
+      page
+    );
+    res.ok({ data: auctionWinners });
+  }),
 
-    /**
-     * Function myWinAuctionHistory.
-     * @description Get my win auction history.
-     * @query params
-     *   {Number} page page in pagination
-     * @policies
-     *   verifyToken
-     */
+  /**
+   * Function myReviewList.
+   * @description get list my review auction.
+   * @query params
+   *   {Number} page page in pagination
+   */
 
-    myWinAuctionHistory: asyncWrap(async (req, res) => {
-        let id = req.user._id;
-        let page = req.query.page !== undefined ? req.query.page : 1;
-        let auctionWinners = await AuctionRepository.winAuctionHistoryByUser(id, page);
-        res.ok({data:auctionWinners});
-    }),
+  myReviewList: asyncWrap(async (req, res) => {
+    let userId = req.user._id;
+    let me = req.user._id;
+    let page = req.query.page ? req.query.page : 1;
+    let reviews = await ReviewRepository.reviewByUser(userId, me, page);
+    return res.ok({ data: reviews });
+  }),
 
-    /**
-     * Function myReviewList.
-     * @description get list my review auction.
-     * @query params
-     *   {Number} page page in pagination
-     */
+  /**
+   * Function favoriteList.
+   * @description get favorite product list of user.
+   * @policies
+   *   verifyToken
+   */
 
-    myReviewList: asyncWrap(async (req, res) => {
-        let userId = req.user._id;
-        let me = req.user._id;
-        let page = req.query.page ? req.query.page : 1;
-        let reviews = await ReviewRepository.reviewByUser(userId, me, page);
-        return res.ok({data: reviews});
-    }),
+  favoriteList: asyncWrap(async (req, res) => {
+    let id = req.user._id;
+    let favorites = await FavoriteRepository.favoriteList(id);
+    return res.ok({ data: favorites });
+  }),
 
-    /**
-     * Function favoriteList.
-     * @description get favorite product list of user.
-     * @policies
-     *   verifyToken
-     */
+  /**
+   * Function createFavorite.
+   * @description create new favorite.
+   * @body params
+   *   {String} name name of product
+   *   {String} url url of product
+   * @policies
+   *   verifyToken
+   *   validator/user/createFavorite
+   */
 
-    favoriteList: asyncWrap(async (req, res) => {
-        let id = req.user._id;
-        let favorites = await FavoriteRepository.favoriteList(id);
-        return res.ok({data:favorites});
-    }),
+  createFavorite: asyncWrap(async (req, res) => {
+    let id = req.user._id;
+    let params = { ...req.body };
+    params.user = id;
+    let favorite = await FavoriteRepository.create(params);
+    return res.ok({ data: favorite });
+  }),
 
-    /**
-     * Function createFavorite.
-     * @description create new favorite.
-     * @body params
-     *   {String} name name of product
-     *   {String} url url of product
-     * @policies
-     *   verifyToken
-     *   validator/user/createFavorite
-     */
+  // get coin
+  getCoin: asyncWrap(async (req, res) => {
+    let coin = req.body.coin > 10000 ? 10000 : req.body.coin;
+    let point = coin * 100;
+    let user = req.user._id;
+    let userCoin = await UserCoin.findOne({ user }).lean(true);
+    if (!userCoin) {
+      await UserCoin.create({
+        user,
+        coin
+      });
+    } else {
+      await UserCoin.update({ user }, { $set: { coin: coin } });
+    }
 
-    createFavorite: asyncWrap(async (req, res) => {
-        let id = req.user._id;
-        let params = {...req.body};
-        params.user = id;
-        let favorite = await FavoriteRepository.create(params);
-        return res.ok({data:favorite});
-    }),
+    let userPoint = await UserPoint.findOne({ user }).lean(true);
+    if (!userPoint) {
+      await UserPoint.create({
+        user,
+        point
+      });
+    } else {
+      await UserPoint.update({ user }, { $set: { point: point } });
+    }
 
-    // get coin
-    getCoin: asyncWrap(async (req,res) => {
-        let coin = req.body.coin > 10000 ? 10000:req.body.coin;
-        let point = coin*100;
-        let user = req.user._id;
-        let userCoin = await UserCoin.findOne({user}).lean(true);
-        if(!userCoin) {
-            await UserCoin.create({
-                user,
-                coin
-            });
-        } else {
-            await UserCoin.update({user}, {$set:{coin:coin}});
-        }
-
-        let userPoint = await UserPoint.findOne({user}).lean(true);
-        if(!userPoint) {
-            await UserPoint.create({
-                user,
-                point
-            });
-        } else {
-            await UserPoint.update({user}, {$set:{point:point}});
-        }
-
-        return res.ok({
-            data: {
-                coin,
-                point
-            }
-        });
-    })
+    return res.ok({
+      data: {
+        coin,
+        point
+      }
+    });
+  })
 };

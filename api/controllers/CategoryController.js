@@ -6,15 +6,13 @@
  */
 
 module.exports = {
+  /**
+   * Get All Categories
+   * @return {json}
+   */
+  getCategories: asyncWrap(async (req, res) => {
+    let categories = await CategoryRepository.getAll();
 
-    /**
-     * Get All Categories
-     * @return {json}
-     */
-    getCategories: asyncWrap(async (req, res) => {
-        let categories = await CategoryRepository.getAll();
-
-        res.ok({data: categories});
-    })
-
+    res.ok({ data: categories });
+  })
 };

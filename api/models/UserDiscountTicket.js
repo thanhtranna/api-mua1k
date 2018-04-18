@@ -5,35 +5,37 @@
  * @docs        :: http://sailsjs.org/documentation/concepts/models-and-orm/models
  */
 
-const mongoose = require("mongoose");
+const mongoose = require('mongoose');
 const mongoosePaginate = require('mongoose-paginate');
 
 const types = {
-    expired: 0,
-    notExpire: 1,
+  expired: 0,
+  notExpire: 1
 };
 
-const UserDiscountTicketSchema = mongoose.Schema({
+const UserDiscountTicketSchema = mongoose.Schema(
+  {
     user: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User'
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
     },
     product: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Product'
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Product'
     },
     expiredAt: {
-        type: Date,
+      type: Date
     },
     deletedAt: {
-        type: Date
+      type: Date
     }
-}, {
+  },
+  {
     timestamps: true
-});
+  }
+);
 
 UserDiscountTicketSchema.plugin(mongoosePaginate);
 
-
-module.exports = mongoose.model("UserDiscountTicket", UserDiscountTicketSchema);
+module.exports = mongoose.model('UserDiscountTicket', UserDiscountTicketSchema);
 module.exports.types = types;
