@@ -69,7 +69,7 @@ module.exports = {
      */
     postAuction: asyncWrap(async (req, res) => {
         let auction = await AuctionRepository.createAuction(req.params.all());
-        res.ok({data: auction});
+        res.ok({ data: auction });
     }, (req, res, error) => {
         if (error.code === sails.errors.createAuctionFail.code)
             return res.badRequest(sails.errors.createAuctionFail);
@@ -88,7 +88,7 @@ module.exports = {
         let auctionId = req.params.auctionid;
         let auction = await AuctionRepository.getDetailAuctionForAdmin(auctionId);
         sails.log.debug(auction);
-        res.ok({ data: auction});
+        res.ok({ data: auction });
     }, (req, res, error) => {
         if (error.code === sails.errors.auctionNotFound.code)
             return res.badRequest(sails.errors.auctionNotFound);
@@ -120,7 +120,7 @@ module.exports = {
     putAuction: asyncWrap(async (req, res) => {
         let auctionId = req.params.auctionid;
         let auction = await AuctionRepository.updateAuction(auctionId, req.params.all());
-        res.ok({data: auction});
+        res.ok({ data: auction });
     }, (req, res, error) => {
         if (error.code === sails.errors.updateAuctionFail.code)
             return res.badRequest(sails.errors.updateAuctionFail);
@@ -130,7 +130,7 @@ module.exports = {
     deleteAuction: asyncWrap(async (req, res) => {
         let auctionId = req.params.auctionid;
         let auction = await AuctionRepository.deleteAuction(auctionId);
-        res.ok({data:auction});
+        res.ok({ data: auction });
     }, (req, res, error) => {
         if (error.code === sails.errors.deleteAuctionFail.code)
             return res.badRequest(sails.errors.deleteAuctionFail);
@@ -148,8 +148,8 @@ module.exports = {
     putAuctionBlock: asyncWrap(async (req, res) => {
         let auctionId = req.params.auctionid;
         let auction = await AuctionRepository.getDetailAuctionForAdmin(auctionId);
-        let blockAuction = await Auction.findByIdAndUpdate(auctionId, {$set: {isBlocked: !auction.isBlocked}}, {new: true});
-        res.ok({data:blockAuction});
+        let blockAuction = await Auction.findByIdAndUpdate(auctionId, { $set: { isBlocked: !auction.isBlocked } }, { new: true });
+        res.ok({ data: blockAuction });
     }),
 
     /**
@@ -185,7 +185,7 @@ module.exports = {
         ];
         let option = sails.helpers.optionPaginate(page, selectFields, populate);
         let logUserChanceBuy = await LogUserChanceBuy.paginate({}, option);
-        res.ok({ data: logUserChanceBuy});
+        res.ok({ data: logUserChanceBuy });
     }),
 
     /**

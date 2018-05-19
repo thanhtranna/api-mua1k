@@ -23,7 +23,7 @@
 let httpMethods = ['get', 'post', 'put', 'patch', 'delete'],
   apiPrefix = '/api/v1';
 
-const getNewRouteKey = function(routeKey) {
+const getNewRouteKey = function (routeKey) {
   routeKey = routeKey.toLowerCase();
   let newRouteKey = '';
   for (let method of httpMethods) {
@@ -41,7 +41,7 @@ const getNewRouteKey = function(routeKey) {
   return newRouteKey;
 };
 
-const generateRoutes = function(routes) {
+const generateRoutes = function (routes) {
   let newRoutes = {};
   for (let routeKey in routes) {
     let newRouteKey = getNewRouteKey(routeKey);

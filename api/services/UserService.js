@@ -15,17 +15,12 @@ const UserService = {
         .findOne({ email })
         .select('_id password')
         .lean();
-
-      console.log({ user });
-
       if (!user) return null;
 
       const isPasswordCorrect = await BcryptService.compare(
         password,
         user.password
       );
-
-      console.log({ isPasswordCorrect });
       if (!isPasswordCorrect) return null;
 
       delete user.password;
@@ -64,10 +59,10 @@ const UserService = {
           return {
             thumb: `https://graph.facebook.com/${
               profile[this.idField]
-            }/picture?width=150&height=150`,
+              }/picture?width=150&height=150`,
             origin: `https://graph.facebook.com/${
               profile[this.idField]
-            }/picture?width=500&height=500`
+              }/picture?width=500&height=500`
           };
         }
       };

@@ -44,10 +44,10 @@ module.exports.http = {
 
     decodedToken: async (req, res, next) => {
       try {
-        let token = req.headers['x-access-token'];
+        const token = req.headers['x-access-token'];
         if (!token || token == 'null') return next();
 
-        let userId = await jwtVerify(token);
+        const userId = await jwtVerify(token);
         req.user = await User.findById(userId);
         next();
       } catch (error) {

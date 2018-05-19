@@ -88,9 +88,9 @@ module.exports = {
       nickname: username,
       email: email,
       password: password,
-      avatar : {
-        "origin" : "/images/avatar.jpg", 
-        "thumb" : "/images/avatar.jpg"
+      avatar: {
+        "origin": "/images/avatar.jpg",
+        "thumb": "/images/avatar.jpg"
       },
       isVerified: true,
       ip: userIpAddress
@@ -107,7 +107,6 @@ module.exports = {
     const token = UserService.generateUserToken({ _id: newUser.id });
     return res.ok({ data: token });
   }),
-
   /**
    * Login via Facebook
    */
@@ -142,90 +141,6 @@ module.exports = {
 
     res.ok({ data: userToken });
   }),
-
-  // getLoginBap: asyncWrap(async (req, res) => {
-  //   return res.redirect(
-  //     `${sails.config.BAPUriWeb}oauth/authorize?client_id=${
-  //       sails.config.BAPAppId
-  //     }&response_type=code&redirect_uri=${sails.config.redireactServer}&scope=${
-  //       sails.config.BAPUriWeb
-  //     }`
-  //   );
-  // }),
-
-  // getCallbackBap: asyncWrap(async (req, res) => {
-  //   const { code } = req.query;
-  //   const url = `${sails.config.BAPUriWeb}oauth/token`;
-  //   const dataForm = {
-  //     client_id: sails.config.BAPAppId,
-  //     client_secret: sails.config.BAPSecretKey,
-  //     grant_type: "authorization_code",
-  //     redirect_uri: sails.config.redireactServer,
-  //     code: code
-  //   };
-
-  //   const response = await HttpService.postPlatform(url, null, dataForm);
-  //   // res.redirect(`${sails.config.redirectApp}?accessToken=${response.access_token}`);
-  //   const isSuccess = true;
-  //   const token = response.access_token;
-  //   if (!token) isSuccess = false;
-  //   res.render("index", { token, isSuccess });
-  // }),
-
-  /**
-   * @API: Post Login BAP Platform
-   * @body - accessToken BAP platform
-   *       - deviceToken
-   * @return token Server Tokubuy
-   */
-  // postLoginBAPPlatform: asyncWrap(async (req, res) => {
-  //   const { accessToken, deviceToken } = req.body;
-  //   const url = `${sails.config.BAPUri}user`;
-
-  //   const response = await HttpService.getPlatform(url, accessToken);
-
-  //   if (response.status && response.status === 200) {
-  //     const user = response.data;
-  //     const checkUser = await User.findOne({ email: user.email });
-  //     if (checkUser) {
-  //       if (checkUser.accessToken !== accessToken) {
-  //         await User.findByIdAndUpdate(
-  //           { _id: checkUser.id },
-  //           { accessToken, deviceToken }
-  //         );
-  //       } else {
-  //         await User.findByIdAndUpdate({ _id: checkUser.id }, { deviceToken });
-  //       }
-  //       const token = UserService.generateUserToken({ _id: checkUser.id });
-  //       return res.ok({ data: token });
-  //     } else {
-  //       // Get IP Address user.
-  //       const userIpAddress = sails.helpers.getUserIpAddress();
-  //       // get Device user.
-  //       const device = sails.helpers.getUserDevice(req.header["user-agent"]);
-  //       const dataCreate = {
-  //         nickname: user.username,
-  //         email: user.email,
-  //         deviceToken: deviceToken,
-  //         accessToken: accessToken,
-  //         isVerified: true,
-  //         device: device || "undefined",
-  //         ip: userIpAddress
-  //       };
-  //       const newUser = await User.create(dataCreate);
-  //       if (newUser) {
-  //         // Create Coin, Point user.
-  //         await Promise.all([
-  //           UserCoin.create({ user: user._id, coin: 0 }),
-  //           UserPoint.create({ user: user._id, point: 0 })
-  //         ]);
-  //       }
-  //       const token = UserService.generateUserToken({ _id: newUser.id });
-  //       return res.ok({ data: token });
-  //     }
-  //   }
-  //   return res.badRequest({});
-  // }),
 
   /**
    * Verify Register
@@ -365,7 +280,7 @@ module.exports = {
    *    validator/user/verifyResetPasswordCode
    * @return null
    */
-  postVerifyResetPassword: function(req, res) {
+  postVerifyResetPassword: function (req, res) {
     res.ok();
   },
 

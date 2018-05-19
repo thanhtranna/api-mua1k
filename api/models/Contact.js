@@ -12,18 +12,18 @@ const ContactSchema = mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: "ContactCategory"
     },
-    title: { type: String },
     user: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "User"
     },
+    title: { type: String },
     email: { type: String },
     content: { type: String },
     deletedAt: { type: Date },
     isHandle: { type: Boolean, default: false }
 }, {
-    timestamps: true
-});
+        timestamps: true
+    });
 
 ContactSchema.plugin(mongoosePaginate);
 
